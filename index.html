@@ -1,0 +1,2042 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coin Researcher</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 600px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .help-button {
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .help-button:hover {
+            background: #5568d3;
+            transform: scale(1.1);
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        /* 탭 스타일 */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 12px 20px;
+            background: transparent;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 600;
+            color: #888;
+            transition: all 0.3s;
+        }
+
+        .tab:hover {
+            color: #667eea;
+        }
+
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            color: #555;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        /* 라디오 버튼 스타일 */
+        .radio-group {
+            display: flex;
+            gap: 20px;
+            margin-top: 8px;
+        }
+
+        .radio-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        .radio-option input[type="radio"] {
+            width: auto;
+            cursor: pointer;
+        }
+
+        .radio-option label {
+            margin: 0;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .coin-options {
+            margin-top: 10px;
+            display: none;
+            max-height: 340px;
+            overflow-y: auto;
+        }
+
+        .coin-options::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .coin-options::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        .coin-options::-webkit-scrollbar-thumb {
+            background: #667eea;
+            border-radius: 10px;
+        }
+
+        .coin-options::-webkit-scrollbar-thumb:hover {
+            background: #5568d3;
+        }
+
+        .coin-option {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: white;
+        }
+
+        .coin-option:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+
+        .coin-option.selected {
+            border-color: #667eea;
+            background: #f0f3ff;
+        }
+
+        .coin-name {
+            font-weight: 600;
+            color: #333;
+            font-size: 15px;
+        }
+
+        .coin-ticker {
+            color: #667eea;
+            font-weight: 700;
+        }
+
+        .coin-market-cap {
+            color: #888;
+            font-size: 13px;
+            margin-top: 4px;
+        }
+
+        .coin-price {
+            color: #667eea;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .coin-volume {
+            color: #888;
+            font-size: 12px;
+            margin-top: 2px;
+        }
+
+        .source-section {
+            margin-bottom: 20px;
+        }
+
+        .source-label {
+            display: block;
+            color: #555;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .source-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: #333;
+        }
+
+        .source-option input[type="radio"] {
+            width: auto;
+            cursor: default;
+        }
+
+        .source-option label {
+            margin: 0;
+            font-weight: 500;
+            cursor: default;
+        }
+
+        .result-source {
+            font-size: 12px;
+            color: rgba(255,255,255,0.8);
+            margin-top: 4px;
+        }
+
+        .rank-badge {
+            display: inline-block;
+            background: #ffd700;
+            color: #333;
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: 700;
+            margin-left: 8px;
+        }
+
+        .loading {
+            text-align: center;
+            color: #667eea;
+            padding: 10px;
+            font-size: 14px;
+        }
+
+        .error {
+            color: #e74c3c;
+            font-size: 14px;
+            margin-top: 8px;
+            white-space: pre-line;
+        }
+
+        .error-link {
+            display: inline-block;
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+            margin-top: 8px;
+            padding: 8px 16px;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            transition: all 0.3s;
+            font-size: 13px;
+        }
+
+        .error-link:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-1px);
+        }
+
+        .result {
+            margin-top: 30px;
+            padding: 25px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px;
+            color: white;
+            display: none;
+        }
+
+        .result-item {
+            margin-bottom: 20px;
+        }
+
+        .result-label {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .result-value {
+            font-size: 36px;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+
+        .result-date {
+            font-size: 13px;
+            opacity: 0.9;
+            margin-bottom: 15px;
+            font-weight: 500;
+        }
+
+        .divider {
+            height: 2px;
+            background: rgba(255,255,255,0.4);
+            margin: 20px 0;
+        }
+
+        .result-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+            opacity: 0.9;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .result-footer-item {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .link-btn {
+            display: inline-block;
+            background: white;
+            color: #667eea;
+            padding: 12px 24px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: 600;
+            margin-top: 15px;
+            transition: transform 0.2s;
+            font-size: 15px;
+        }
+
+        .link-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .info-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid rgba(255,255,255,0.4);
+        }
+
+        .info-section-title {
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            opacity: 0.95;
+        }
+
+        .info-item {
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 4px;
+            opacity: 0.9;
+        }
+
+        .info-warning {
+            font-size: 12px;
+            opacity: 0.8;
+            margin-top: 8px;
+        }
+
+
+        @media (max-width: 640px) {
+            .container {
+                padding: 25px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            .result-value {
+                font-size: 28px;
+            }
+
+            .result-footer {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .result-footer-item {
+                width: 100%;
+            }
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 모달 스타일 */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            animation: fadeIn 0.3s;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            animation: slideIn 0.3s;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 28px;
+            color: #999;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .modal-close:hover {
+            color: #333;
+        }
+
+        .modal-content {
+            color: #555;
+            line-height: 1.8;
+        }
+
+        .modal-content h3 {
+            color: #667eea;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+
+        .modal-content ul {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+
+        .modal-content li {
+            margin-bottom: 8px;
+        }
+
+        .modal-links {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .modal-link {
+            display: inline-block;
+            padding: 8px 16px;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .modal-link:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        /* 이스터에그 스타일 */
+        .easter-egg {
+            border: 3px solid #ffd700;
+            background: linear-gradient(135deg, #fff9e6 0%, #ffe5e5 100%);
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            margin-top: 20px;
+            animation: fadeIn 0.5s, rainbow 3s infinite;
+            box-shadow: 0 10px 40px rgba(255, 215, 0, 0.3);
+        }
+
+        .easter-egg-title {
+            font-size: 28px;
+            color: #ff6b6b;
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+
+        .easter-egg-content {
+            color: #333;
+            line-height: 2;
+            font-size: 16px;
+        }
+
+        .easter-egg-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #667eea;
+            margin: 20px 0;
+        }
+
+        .easter-egg-links {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        .easter-egg-link {
+            display: inline-block;
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 10px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .easter-egg-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        @keyframes rainbow {
+            0% { box-shadow: 0 10px 40px rgba(255, 0, 0, 0.2); }
+            16% { box-shadow: 0 10px 40px rgba(255, 127, 0, 0.2); }
+            33% { box-shadow: 0 10px 40px rgba(255, 255, 0, 0.2); }
+            50% { box-shadow: 0 10px 40px rgba(0, 255, 0, 0.2); }
+            66% { box-shadow: 0 10px 40px rgba(0, 0, 255, 0.2); }
+            83% { box-shadow: 0 10px 40px rgba(75, 0, 130, 0.2); }
+            100% { box-shadow: 0 10px 40px rgba(148, 0, 211, 0.2); }
+        }
+
+        /* 모바일 반응형 */
+        @media (max-width: 768px) {
+            .container {
+                width: 90%;
+                padding: 20px;
+                margin: 10px auto;
+            }
+
+            h1 {
+                font-size: 22px;
+            }
+
+            .help-button {
+                width: 32px;
+                height: 32px;
+                font-size: 18px;
+            }
+
+            input, select {
+                min-height: 48px;
+                font-size: 16px;
+            }
+
+            .tab {
+                min-height: 44px;
+                font-size: 14px;
+                padding: 10px 16px;
+            }
+
+            .coin-option {
+                min-height: 60px;
+                padding: 12px;
+            }
+
+            .result-value {
+                font-size: 28px;
+            }
+
+            .link-btn, .error-link {
+                width: 100%;
+                text-align: center;
+            }
+
+            .modal {
+                width: 95%;
+                padding: 20px;
+            }
+
+            .modal-title {
+                font-size: 20px;
+            }
+
+            .easter-egg {
+                padding: 20px;
+            }
+
+            .easter-egg-title {
+                font-size: 22px;
+            }
+
+            .easter-egg-value {
+                font-size: 24px;
+            }
+
+            .easter-egg-links {
+                flex-direction: column;
+            }
+
+            .easter-egg-link {
+                width: 100%;
+            }
+        }
+
+        /* 터치 최적화 */
+        @media (hover: none) and (pointer: coarse) {
+            .coin-option, .tab, button, a {
+                -webkit-tap-highlight-color: rgba(102, 126, 234, 0.2);
+            }
+        }
+
+        /* 스크롤 부드럽게 (모바일) */
+        .modal, .coin-options, .result {
+            -webkit-overflow-scrolling: touch;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>
+            🔍 Coin Researcher
+            <button class="help-button" onclick="openHelpModal()">?</button>
+        </h1>
+        <p class="subtitle">OTC 딜을 위한 코인 분석 도구</p>
+
+        <!-- 탭 -->
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('realtime')">실시간</button>
+            <button class="tab" onclick="switchTab('historical')">과거 조회</button>
+        </div>
+
+        <!-- 실시간 탭 -->
+        <div id="realtime" class="tab-content active">
+            <div class="input-group">
+                <label>기준</label>
+                <div class="radio-group" id="realtimeSourceOptions">
+                    <!-- JavaScript로 동적 생성 -->
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label for="ticker">코인 티커 or 이름</label>
+                <input type="text" id="ticker" placeholder="예: BTC, ETH, SOL" autocomplete="off">
+                <div id="loading" class="loading" style="display: none;">
+                    <div class="spinner"></div>코인 검색 중...
+                </div>
+                <div id="error" class="error"></div>
+                <div id="coinOptions" class="coin-options"></div>
+            </div>
+
+            <div class="input-group">
+                <label for="amount">수량</label>
+                <input type="text" id="amount" placeholder="거래 수량 입력">
+            </div>
+
+            <div id="result" class="result">
+                <div class="result-item">
+                    <div class="result-label">USDT 총액</div>
+                    <div class="result-value" id="usdtTotal">$0.00</div>
+                </div>
+
+                <div class="result-item">
+                    <div class="result-label">KRW 총액</div>
+                    <div class="result-value" id="krwTotal">₩0</div>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="result-footer-item">
+                    <div id="coinPrice"></div>
+                    <div class="result-source">* 기준: CoinGecko</div>
+                </div>
+
+                <div style="margin-top: 15px;">
+                    <div id="exchangeRate"></div>
+                    <div class="result-source">* 기준: 업비트</div>
+                </div>
+
+                <div id="chainInfo" class="info-section" style="display: none;">
+                    <div class="info-section-title">📡 지원 체인</div>
+                    <div id="chainList"></div>
+                </div>
+
+                <div id="exchangeInfo" class="info-section" style="display: none;">
+                    <div class="info-section-title">🏦 거래 가능</div>
+                    <div id="exchangeList"></div>
+                </div>
+
+                <div id="walletInfo" class="info-section" style="display: none;">
+                    <div class="info-section-title">💼 지갑 호환성 (참고용 - 2026.01 기준)</div>
+                    <div id="walletList"></div>
+                    <div class="info-warning">⚠️ 실제 거래 전 지갑에서 재확인 필수</div>
+                </div>
+
+                <a id="coingeckoLink" href="#" target="_blank" class="link-btn" style="display: none;">
+                    🔗 CoinGecko에서 확인하기
+                </a>
+            </div>
+
+            <!-- 이스터에그 -->
+            <div id="easterEgg" class="easter-egg" style="display: none;">
+                <div class="easter-egg-title">🎉 이스터에그 발견! 🎉</div>
+                <div class="easter-egg-content">
+                    💌 제작자 <strong>Patrick Lee</strong>입니다<br>
+                    생일: <strong>1994년 10월 4일</strong><br><br>
+                    이 계산기는 제 첫 바이브코딩 프로젝트입니다.<br>
+                    사용해주셔서 감사합니다! 🙏<br><br>
+                    <strong>특별 계산 결과:</strong>
+                    <div class="easter-egg-value">
+                        Patrick Lee 코인 = $1,994<br>
+                        총 보유액 = $19,940,407,976<br>
+                        <span style="font-size: 20px;">(약 200억 원!)</span>
+                    </div>
+                </div>
+                <div class="easter-egg-links">
+                    <a href="https://www.youtube.com/watch?v=DTXaHsIPjnY" target="_blank" class="easter-egg-link">🎂 생일 축하 노래 듣기</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 과거 조회 탭 -->
+        <div id="historical" class="tab-content">
+            <div class="input-group">
+                <label>기준</label>
+                <div class="radio-group">
+                    <div class="radio-option">
+                        <input type="radio" id="sourceCoinGecko" name="source" value="coingecko" checked onchange="onSourceChange()">
+                        <label for="sourceCoinGecko">CoinGecko</label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" id="sourceDeribit" name="source" value="deribit" onchange="onSourceChange()">
+                        <label for="sourceDeribit">Deribit Index (BTC/ETH/SOL)</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label for="histDate">조회 날짜</label>
+                <input type="date" id="histDate">
+            </div>
+
+            <div class="input-group">
+                <label for="histTicker" id="histTickerLabel">코인 티커</label>
+                <input type="text" id="histTicker" placeholder="예: BTC, ETH, SOL">
+                <select id="histCoinSelect" style="display: none;">
+                    <option value="BTC">BTC</option>
+                    <option value="ETH">ETH</option>
+                    <option value="SOL">SOL</option>
+                </select>
+                <div id="histLoading" class="loading" style="display: none;">
+                    <div class="spinner"></div>코인 검색 중...
+                </div>
+                <div id="histError" class="error"></div>
+                <div id="histCoinOptions" class="coin-options"></div>
+            </div>
+
+            <div class="input-group">
+                <label for="histAmount">수량</label>
+                <input type="text" id="histAmount" value="1" onfocus="if(this.value=='1') this.value=''">
+            </div>
+
+            <div id="histResult" class="result">
+                <div class="result-date" id="histResultDate"></div>
+
+                <div class="result-item">
+                    <div class="result-label" id="histUsdLabel">USDT 총액</div>
+                    <div class="result-value" id="histUsdtTotal">$0.00</div>
+                </div>
+
+                <div class="result-item">
+                    <div class="result-label">KRW 총액</div>
+                    <div class="result-value" id="histKrwTotal">₩0</div>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="result-footer-item">
+                    <div id="histCoinPrice"></div>
+                    <div class="result-source" id="histCoinPriceSource">* 기준: CoinGecko</div>
+                </div>
+
+                <div style="margin-top: 15px;">
+                    <div id="histExchangeRate"></div>
+                    <div class="result-source">* 기준: 업비트</div>
+                </div>
+
+                <a id="histLink" href="#" target="_blank" class="link-btn" style="display: none;">
+                    🔗 상세 정보 확인하기
+                </a>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- 도움말 모달 -->
+    <div id="helpModal" class="modal-overlay" onclick="closeHelpModal(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <div class="modal-title">❓ 사용 방법</div>
+                <button class="modal-close" onclick="closeHelpModal()">&times;</button>
+            </div>
+            <div class="modal-content">
+                <h3>📌 이 계산기는?</h3>
+                <p>알트코인의 USDT 및 KRW 총액을 빠르게 계산해주는 도구입니다.</p>
+
+                <h3>📝 사용 방법</h3>
+                <ul>
+                    <li><strong>1️⃣ 조회 시점 선택</strong>
+                        <ul>
+                            <li>실시간: 현재 시세</li>
+                            <li>과거: 특정 날짜 시세</li>
+                        </ul>
+                    </li>
+                    <li><strong>2️⃣ 데이터 소스 선택 (선택사항)</strong>
+                        <ul>
+                            <li>CoinGecko (기본)</li>
+                            <li>Deribit Index (과거만, 준비중)</li>
+                        </ul>
+                    </li>
+                    <li><strong>3️⃣ 코인 검색</strong>
+                        <ul>
+                            <li>티커 입력: BTC, ETH, SOL</li>
+                            <li>이름 입력: Bitcoin, Ethereum</li>
+                            <li>검색 결과에서 선택</li>
+                        </ul>
+                    </li>
+                    <li><strong>4️⃣ 수량 입력</strong>
+                        <ul>
+                            <li>보유/거래할 코인 개수 입력</li>
+                        </ul>
+                    </li>
+                    <li><strong>5️⃣ 결과 확인</strong>
+                        <ul>
+                            <li>USDT 총액</li>
+                            <li>KRW 총액 (업비트 환율)</li>
+                        </ul>
+                    </li>
+                </ul>
+
+                <h3>💡 팁</h3>
+                <ul>
+                    <li>천 단위 구분: 1,000 자동 표시</li>
+                    <li>스크롤: 검색 결과 더보기</li>
+                </ul>
+
+                <h3>📊 데이터 출처</h3>
+                <ul>
+                    <li>코인 시세: CoinGecko API</li>
+                    <li>USDT/KRW: 업비트 API</li>
+                </ul>
+
+                <h3>⚠️ 주의사항</h3>
+                <ul>
+                    <li>본 계산기는 참고용 계산기입니다</li>
+                    <li>무료 API를 사용하기 때문에 검색 제한에 따른 오류가 빈번히 발생합니다.</li>
+                </ul>
+
+                <h3>👨‍💻 제작자</h3>
+                <p><strong>Patrick Lee</strong> (1994.10.04)</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 전역 변수
+        let selectedCoin = null;
+        let usdtKrwRate = 0;
+        let debounceTimer = null;
+        let histSelectedCoin = null;
+        let histDebounceTimer = null;
+
+        // API 캐싱 (3분)
+        const searchCache = {};
+        const CACHE_DURATION = 3 * 60 * 1000; // 180,000ms = 3분
+
+        // 실시간 탭 데이터 소스 설정
+        const realtimeDataSources = [
+            { id: 'coingecko', name: 'CoinGecko', enabled: true, selected: true }
+            // 추후 추가 예시:
+            // { id: 'deribit', name: 'Deribit Index (BTC/ETH/SOL)', enabled: false, selected: false }
+        ];
+
+        // 티커 이름 변경 매핑
+        const renamedTickers = {
+            'XPLA': { apiId: 'xpla', newName: 'CONX', oldName: 'XPLA' }
+        };
+
+        // 지갑 지원 체인 리스트
+        const walletSupport = {
+            fireblocks: ['ethereum', 'bitcoin', 'binance-smart-chain', 'polygon-pos', 'arbitrum-one', 'optimistic-ethereum', 'avalanche', 'solana', 'polkadot', 'cardano', 'stellar', 'tron', 'cosmos'],
+            mpcVault: ['ethereum', 'bitcoin', 'binance-smart-chain', 'polygon-pos', 'arbitrum-one', 'optimistic-ethereum', 'solana', 'avalanche']
+        };
+
+        // 메이저 네트워크 리스트
+        const majorNetworks = ['binance-smart-chain', 'polygon-pos', 'arbitrum-one', 'optimistic-ethereum', 'base', 'avalanche', 'solana'];
+
+        // 체인명 변환 매핑
+        const chainNameMap = {
+            'binance-smart-chain': 'BNB Chain',
+            'polygon-pos': 'Polygon',
+            'arbitrum-one': 'Arbitrum',
+            'optimistic-ethereum': 'Optimism',
+            'base': 'Base',
+            'avalanche': 'Avalanche',
+            'solana': 'Solana',
+            'ethereum': 'Ethereum'
+        };
+
+        // 메이저 CEX 리스트
+        const majorExchanges = ['binance', 'upbit', 'bithumb', 'coinbase', 'kraken', 'okx', 'bybit', 'gate', 'korbit', 'huobi', 'kucoin'];
+        const koreanExchanges = ['upbit', 'bithumb', 'korbit'];
+
+        // 거래소명 변환 매핑
+        const exchangeNameMap = {
+            'binance': '바이낸스',
+            'upbit': '업비트',
+            'bithumb': '빗썸',
+            'coinbase': 'Coinbase',
+            'kraken': 'Kraken',
+            'okx': 'OKX',
+            'bybit': 'Bybit',
+            'gate': 'Gate.io',
+            'korbit': '코빗',
+            'huobi': 'Huobi',
+            'kucoin': 'KuCoin'
+        };
+
+        // 오류 메시지 표시 헬퍼 함수
+        function showError(errorElement, title, message, linkText = null, linkUrl = null) {
+            let errorHTML = `<strong>${title}</strong>\n${message}`;
+            errorElement.innerHTML = errorHTML;
+
+            // 기존 링크 제거
+            const existingLink = errorElement.nextElementSibling;
+            if (existingLink && existingLink.classList.contains('error-link')) {
+                existingLink.remove();
+            }
+
+            // 새 링크 추가
+            if (linkText && linkUrl) {
+                const link = document.createElement('a');
+                link.href = linkUrl;
+                link.target = '_blank';
+                link.className = 'error-link';
+                link.textContent = linkText;
+                errorElement.parentNode.insertBefore(link, errorElement.nextSibling);
+            }
+        }
+
+        function getDeribitUrl(ticker) {
+            const upperTicker = ticker.toUpperCase();
+            return ['BTC', 'ETH', 'SOL'].includes(upperTicker)
+                ? `https://www.deribit.com/statistics/${upperTicker}/options`
+                : 'https://www.deribit.com/';
+        }
+
+        // 체인 정보 표시
+        function displayChainInfo(platforms) {
+            const chainInfoSection = document.getElementById('chainInfo');
+            const chainList = document.getElementById('chainList');
+
+            if (!platforms || Object.keys(platforms).length === 0) {
+                chainInfoSection.style.display = 'none';
+                return;
+            }
+
+            const chains = Object.keys(platforms);
+            const ethereumChains = chains.filter(c => c === 'ethereum');
+            const majorChains = chains.filter(c => c !== 'ethereum' && majorNetworks.includes(c));
+            const nativeChains = chains.filter(c => c !== 'ethereum' && !majorNetworks.includes(c));
+
+            let chainHTML = '';
+
+            // Ethereum 최우선
+            ethereumChains.forEach(chain => {
+                chainHTML += `<div class="info-item">✅ ${chainNameMap[chain] || chain}</div>`;
+            });
+
+            // 메이저 네트워크
+            majorChains.forEach(chain => {
+                chainHTML += `<div class="info-item">✅ ${chainNameMap[chain] || chain}</div>`;
+            });
+
+            // 자체 메인넷 (최대 5개까지만 표시)
+            const displayNative = nativeChains.slice(0, 5 - ethereumChains.length - majorChains.length);
+            displayNative.forEach(chain => {
+                const displayName = chain.charAt(0).toUpperCase() + chain.slice(1).replace(/-/g, ' ');
+                chainHTML += `<div class="info-item">⚪ ${displayName} (자체 메인넷)</div>`;
+            });
+
+            chainList.innerHTML = chainHTML;
+            chainInfoSection.style.display = 'block';
+        }
+
+        // 거래소 정보 표시
+        function displayExchangeInfo(tickers) {
+            const exchangeInfoSection = document.getElementById('exchangeInfo');
+            const exchangeList = document.getElementById('exchangeList');
+
+            if (!tickers || tickers.length === 0) {
+                exchangeList.innerHTML = '<div class="info-item">거래소 정보 없음 (DEX 확인 필요)</div>';
+                exchangeInfoSection.style.display = 'block';
+                return;
+            }
+
+            // CEX 필터링 및 거래량 추출
+            const exchanges = {};
+            tickers.forEach(ticker => {
+                if (ticker.market && ticker.market.identifier) {
+                    const exchangeId = ticker.market.identifier.toLowerCase();
+                    if (majorExchanges.includes(exchangeId)) {
+                        if (!exchanges[exchangeId]) {
+                            exchanges[exchangeId] = {
+                                name: exchangeNameMap[exchangeId] || exchangeId,
+                                volume: ticker.converted_volume?.usd || 0,
+                                isKorean: koreanExchanges.includes(exchangeId)
+                            };
+                        } else {
+                            exchanges[exchangeId].volume += ticker.converted_volume?.usd || 0;
+                        }
+                    }
+                }
+            });
+
+            const exchangeArray = Object.entries(exchanges).map(([id, data]) => ({ id, ...data }));
+
+            if (exchangeArray.length === 0) {
+                exchangeList.innerHTML = '<div class="info-item">거래소 정보 없음 (DEX 확인 필요)</div>';
+                exchangeInfoSection.style.display = 'block';
+                return;
+            }
+
+            // 한국 거래소와 글로벌 거래소 분리 및 정렬
+            const koreanExs = exchangeArray.filter(e => e.isKorean).sort((a, b) => b.volume - a.volume);
+            const globalExs = exchangeArray.filter(e => !e.isKorean).sort((a, b) => b.volume - a.volume);
+
+            let exchangeHTML = '';
+
+            // 한국 거래소 (최대 3개)
+            if (koreanExs.length > 0) {
+                const koreanNames = koreanExs.slice(0, 3).map(e => e.name).join(', ');
+                exchangeHTML += `<div class="info-item">🇰🇷 ${koreanNames}</div>`;
+            }
+
+            // 글로벌 거래소 (최대 5개)
+            if (globalExs.length > 0) {
+                const globalNames = globalExs.slice(0, 5).map(e => e.name).join(', ');
+                exchangeHTML += `<div class="info-item">🌐 ${globalNames}</div>`;
+            }
+
+            exchangeList.innerHTML = exchangeHTML;
+            exchangeInfoSection.style.display = 'block';
+        }
+
+        // 지갑 호환성 표시
+        function displayWalletInfo(platforms) {
+            const walletInfoSection = document.getElementById('walletInfo');
+            const walletList = document.getElementById('walletList');
+
+            if (!platforms || Object.keys(platforms).length === 0) {
+                walletInfoSection.style.display = 'none';
+                return;
+            }
+
+            const chains = Object.keys(platforms);
+
+            // Fireblocks 지원 확인
+            const fireblocksSupported = chains.some(chain => walletSupport.fireblocks.includes(chain));
+
+            // MPC Vault 지원 확인
+            const mpcVaultSupported = chains.some(chain => walletSupport.mpcVault.includes(chain));
+
+            let walletHTML = '';
+
+            if (fireblocksSupported) {
+                walletHTML += '<div class="info-item">✅ Fireblocks 지원 가능</div>';
+            } else {
+                walletHTML += '<div class="info-item">❌ Fireblocks 미지원 (자체 메인넷)</div>';
+            }
+
+            if (mpcVaultSupported) {
+                walletHTML += '<div class="info-item">✅ MPC Vault 지원 가능</div>';
+            } else {
+                walletHTML += '<div class="info-item">❌ MPC Vault 미지원</div>';
+            }
+
+            walletList.innerHTML = walletHTML;
+            walletInfoSection.style.display = 'block';
+        }
+
+        // 도움말 모달 열기/닫기
+        function openHelpModal() {
+            document.getElementById('helpModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeHelpModal(event) {
+            if (!event || event.target === event.currentTarget) {
+                document.getElementById('helpModal').classList.remove('active');
+                document.body.style.overflow = 'auto';
+            }
+        }
+
+        // ESC 키로 모달 닫기
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeHelpModal();
+            }
+        });
+
+        // 이스터에그 체크 및 표시
+        function checkEasterEgg(ticker, amount) {
+            if (ticker.toLowerCase() === 'patrick lee' && amount === 19941004) {
+                // Confetti 효과
+                confetti({
+                    particleCount: 100,
+                    spread: 70,
+                    origin: { y: 0.6 }
+                });
+
+                // 이스터에그 표시
+                document.getElementById('easterEgg').style.display = 'block';
+                document.getElementById('result').style.display = 'none';
+
+                // 스크롤 이동
+                setTimeout(() => {
+                    document.getElementById('easterEgg').scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 100);
+
+                return true;
+            }
+            return false;
+        }
+
+        // 실시간 탭 라디오 버튼 동적 생성
+        function initRealtimeSourceOptions() {
+            const container = document.getElementById('realtimeSourceOptions');
+            container.innerHTML = '';
+
+            realtimeDataSources.forEach((source, index) => {
+                const radioOption = document.createElement('div');
+                radioOption.className = 'radio-option';
+
+                const radioInput = document.createElement('input');
+                radioInput.type = 'radio';
+                radioInput.id = `realtimeSource${source.id}`;
+                radioInput.name = 'realtimeSource';
+                radioInput.value = source.id;
+                radioInput.disabled = !source.enabled;
+                if (source.selected) {
+                    radioInput.checked = true;
+                }
+                radioInput.addEventListener('change', onRealtimeSourceChange);
+
+                const label = document.createElement('label');
+                label.htmlFor = `realtimeSource${source.id}`;
+                label.textContent = source.name;
+                if (!source.enabled) {
+                    label.style.color = '#ccc';
+                    radioOption.style.cursor = 'not-allowed';
+                }
+
+                radioOption.appendChild(radioInput);
+                radioOption.appendChild(label);
+                container.appendChild(radioOption);
+            });
+        }
+
+        // 실시간 탭 데이터 소스 변경 이벤트
+        function onRealtimeSourceChange() {
+            // 현재는 CoinGecko만 있으므로 특별한 처리 없음
+            // 추후 다른 소스 추가 시 여기서 UI 변경 처리
+            document.getElementById('coinOptions').style.display = 'none';
+            document.getElementById('error').textContent = '';
+            selectedCoin = null;
+        }
+
+        // 탭 전환
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+            event.target.classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+
+            // 결과 숨기기
+            document.getElementById('result').style.display = 'none';
+            document.getElementById('histResult').style.display = 'none';
+        }
+
+        // 과거 조회 - 기준 변경
+        function onSourceChange() {
+            const isDeribit = document.getElementById('sourceDeribit').checked;
+            document.getElementById('histTicker').style.display = isDeribit ? 'none' : 'block';
+            document.getElementById('histCoinSelect').style.display = isDeribit ? 'block' : 'none';
+            document.getElementById('histCoinOptions').style.display = 'none';
+            document.getElementById('histError').textContent = '';
+            histSelectedCoin = null;
+        }
+
+        // ========== 실시간 탭 함수 ==========
+
+        function loadSavedCoin() {
+            const saved = localStorage.getItem('selectedCoin');
+            if (saved) {
+                selectedCoin = JSON.parse(saved);
+            }
+        }
+
+        function saveCoin(coin) {
+            localStorage.setItem('selectedCoin', JSON.stringify(coin));
+        }
+
+        function formatMarketCap(marketCap) {
+            if (marketCap >= 1e9) {
+                return '$' + (marketCap / 1e9).toFixed(2) + 'B';
+            } else if (marketCap >= 1e6) {
+                return '$' + (marketCap / 1e6).toFixed(2) + 'M';
+            } else if (marketCap >= 1e3) {
+                return '$' + (marketCap / 1e3).toFixed(2) + 'K';
+            } else {
+                return '$' + marketCap.toFixed(2);
+            }
+        }
+
+        function formatNumber(num) {
+            return new Intl.NumberFormat('ko-KR').format(num);
+        }
+
+        function formatVolume(volume) {
+            if (volume >= 1e9) {
+                return '$' + (volume / 1e9).toFixed(2) + 'B';
+            } else if (volume >= 1e6) {
+                return '$' + (volume / 1e6).toFixed(2) + 'M';
+            } else if (volume >= 1e3) {
+                return '$' + (volume / 1e3).toFixed(2) + 'K';
+            } else {
+                return '$' + volume.toFixed(2);
+            }
+        }
+
+        async function searchCoin(ticker) {
+            const errorElement = document.getElementById('error');
+
+            console.log('🔍 검색어:', ticker);
+
+            if (!ticker) {
+                document.getElementById('coinOptions').style.display = 'none';
+                errorElement.textContent = '';
+                return;
+            }
+
+            // 캐시 확인
+            const cacheKey = ticker.toLowerCase();
+            if (searchCache[cacheKey] && Date.now() - searchCache[cacheKey].timestamp < CACHE_DURATION) {
+                console.log('✅ 캐시 사용:', ticker);
+                displayCoinOptions(searchCache[cacheKey].data);
+                document.getElementById('loading').style.display = 'none';
+                return;
+            }
+
+            document.getElementById('loading').style.display = 'block';
+            errorElement.innerHTML = '';
+            document.getElementById('coinOptions').style.display = 'none';
+
+            // 기존 에러 링크 제거
+            const existingLink = errorElement.nextElementSibling;
+            if (existingLink && existingLink.classList.contains('error-link')) {
+                existingLink.remove();
+            }
+
+            try {
+                const searchUrl = `https://api.coingecko.com/api/v3/search?query=${ticker}`;
+                console.log('📡 API 호출:', ticker);
+                console.log('📡 API URL:', searchUrl);
+
+                const response = await fetch(searchUrl);
+                console.log('📊 API 상태 코드:', response.status);
+
+                // API 쿨타임 오류 (429)
+                if (response.status === 429) {
+                    console.log('⏳ API 쿨타임 오류 발생');
+                    document.getElementById('loading').style.display = 'none';
+                    showError(
+                        errorElement,
+                        '⏳ 잠시 후 다시 시도해주세요',
+                        'API 호출 제한입니다. 10-30초 후 다시 시도해주세요.',
+                        '🔗 CoinGecko에서 직접 검색하기',
+                        'https://www.coingecko.com/'
+                    );
+                    return;
+                }
+
+                // 서버 오류 (500번대)
+                if (response.status >= 500) {
+                    console.log('⚠️ 서버 오류 발생:', response.status);
+                    document.getElementById('loading').style.display = 'none';
+                    showError(
+                        errorElement,
+                        '⚠️ 서버 오류',
+                        '일시적인 문제입니다. 잠시 후 다시 시도해주세요.'
+                    );
+                    return;
+                }
+
+                // 404 또는 기타 오류
+                if (!response.ok) {
+                    console.log('❌ HTTP 오류:', response.status, response.statusText);
+                    document.getElementById('loading').style.display = 'none';
+                    showError(
+                        errorElement,
+                        '❌ 검색 실패',
+                        `서버 응답 오류가 발생했습니다. (${response.status})`,
+                        '🔗 CoinGecko에서 직접 검색하기',
+                        'https://www.coingecko.com/'
+                    );
+                    return;
+                }
+
+                const data = await response.json();
+                console.log('📊 검색 결과 개수:', data.coins ? data.coins.length : 0);
+
+                if (data.coins && data.coins.length > 0) {
+                    console.log('✅ 전체 검색 결과:', data.coins.length, '개');
+
+                    // 상위 10개만 가져오기
+                    const topCoins = data.coins.slice(0, 10);
+
+                    const coinDetails = await Promise.all(
+                        topCoins.map(async (coin) => {
+                            try {
+                                const detailResponse = await fetch(`https://api.coingecko.com/api/v3/coins/${coin.id}`);
+                                const detail = await detailResponse.json();
+                                return {
+                                    id: coin.id,
+                                    symbol: coin.symbol,
+                                    name: coin.name,
+                                    marketCap: detail.market_data?.market_cap?.usd || 0,
+                                    currentPrice: detail.market_data?.current_price?.usd || 0,
+                                    volume24h: detail.market_data?.total_volume?.usd || 0,
+                                    thumb: coin.thumb,
+                                    platforms: detail.platforms || {},
+                                    tickers: detail.tickers || []
+                                };
+                            } catch (e) {
+                                console.error('❌ 코인 상세 정보 조회 실패:', coin.id, e);
+                                return null;
+                            }
+                        })
+                    );
+
+                    const validCoins = coinDetails.filter(c => c !== null);
+
+                    if (validCoins.length === 0) {
+                        document.getElementById('loading').style.display = 'none';
+                        showError(
+                            errorElement,
+                            '⚠️ 가격 정보 없음',
+                            `"${ticker}" 코인의 가격 정보를 찾을 수 없습니다.`
+                        );
+                        return;
+                    }
+
+                    // 시총 순으로 정렬 (내림차순)
+                    const sortedCoins = validCoins.sort((a, b) => b.marketCap - a.marketCap);
+                    console.log('📊 시총 순 정렬 완료:', sortedCoins.length, '개');
+
+                    // 캐시에 저장
+                    searchCache[cacheKey] = {
+                        data: sortedCoins,
+                        timestamp: Date.now()
+                    };
+                    console.log('💾 캐시 저장:', ticker);
+
+                    displayCoinOptions(sortedCoins);
+                } else {
+                    // 검색 결과가 없을 때도 renamedTickers 체크
+                    const upperTicker = ticker.toUpperCase();
+                    console.log('🔄 renamedTickers 확인 (결과 없음):', upperTicker, renamedTickers[upperTicker]);
+
+                    if (renamedTickers[upperTicker]) {
+                        const renamed = renamedTickers[upperTicker];
+                        console.log('🎯 변경된 티커 발견:', renamed);
+
+                        // 변경된 티커로 직접 조회
+                        try {
+                            const directUrl = `https://api.coingecko.com/api/v3/coins/${renamed.apiId}`;
+                            console.log('📡 직접 조회 URL:', directUrl);
+
+                            const directResponse = await fetch(directUrl);
+                            const coinData = await directResponse.json();
+
+                            if (coinData && coinData.id) {
+                                console.log('✅ 직접 조회 성공:', coinData.name);
+
+                                const renamedCoin = {
+                                    id: coinData.id,
+                                    symbol: coinData.symbol,
+                                    name: coinData.name,
+                                    marketCap: coinData.market_data?.market_cap?.usd || 0,
+                                    currentPrice: coinData.market_data?.current_price?.usd || 0,
+                                    volume24h: coinData.market_data?.total_volume?.usd || 0,
+                                    thumb: coinData.image?.thumb,
+                                    platforms: coinData.platforms || {},
+                                    tickers: coinData.tickers || []
+                                };
+
+                                // 안내 메시지 표시
+                                showError(
+                                    errorElement,
+                                    'ℹ️ 티커 변경 안내',
+                                    `"${renamed.oldName}"는 "${renamed.newName}"로 변경되었습니다.`
+                                );
+
+                                displayCoinOptions([renamedCoin]);
+                                document.getElementById('loading').style.display = 'none';
+                                return;
+                            }
+                        } catch (e) {
+                            console.error('❌ 직접 조회 실패:', e);
+                        }
+                    }
+
+                    showError(
+                        errorElement,
+                        '❌ 검색 결과 없음',
+                        `"${ticker}"에 해당하는 코인을 찾을 수 없습니다.\n티커 또는 이름을 확인해주세요.`,
+                        '🔗 CoinGecko에서 직접 검색하기',
+                        'https://www.coingecko.com/'
+                    );
+                }
+            } catch (error) {
+                console.error('❌ 네트워크 오류:', error);
+                showError(
+                    errorElement,
+                    '⚠️ 네트워크 연결 오류',
+                    '인터넷 연결을 확인해주세요.'
+                );
+            }
+
+            document.getElementById('loading').style.display = 'none';
+        }
+
+
+        function displayCoinOptions(coins) {
+            const container = document.getElementById('coinOptions');
+            container.innerHTML = '';
+            container.style.display = 'block';
+
+            coins.forEach((coin, index) => {
+                const option = document.createElement('div');
+                option.className = 'coin-option';
+                if (index === 0) {
+                    option.classList.add('selected');
+                    selectedCoin = coin;
+                    saveCoin(coin);
+                }
+
+                option.innerHTML = `
+                    <div class="coin-name">
+                        ${coin.name} <span class="coin-ticker">(${coin.symbol.toUpperCase()})</span>
+                        ${index === 0 ? '<span class="rank-badge">시총 1위</span>' : ''}
+                    </div>
+                    <div class="coin-market-cap">
+                        <span class="coin-price">$${formatNumber(coin.currentPrice)}</span> | 시총: ${formatMarketCap(coin.marketCap)}
+                    </div>
+                    <div class="coin-volume">
+                        24h 거래량: ${formatVolume(coin.volume24h)}
+                    </div>
+                `;
+
+                option.addEventListener('click', () => {
+                    document.querySelectorAll('.coin-option').forEach(opt => {
+                        opt.classList.remove('selected');
+                    });
+                    option.classList.add('selected');
+                    selectedCoin = coin;
+                    saveCoin(coin);
+                    calculate();
+                });
+
+                container.appendChild(option);
+            });
+
+            calculate();
+        }
+
+        async function getUsdtKrwRate() {
+            try {
+                const response = await fetch('https://api.upbit.com/v1/ticker?markets=KRW-USDT');
+                const data = await response.json();
+                if (data && data[0]) {
+                    usdtKrwRate = data[0].trade_price;
+                }
+            } catch (error) {
+                console.error('환율 조회 오류:', error);
+            }
+        }
+
+        function formatAmountInput(input) {
+            let cursorPosition = input.selectionStart;
+            const oldValue = input.value;
+            const oldLength = oldValue.length;
+
+            let value = input.value.replace(/[^\d.]/g, '');
+
+            const parts = value.split('.');
+            if (parts.length > 2) {
+                value = parts[0] + '.' + parts.slice(1).join('');
+            }
+
+            if (value === '') {
+                input.value = '';
+                return;
+            }
+
+            const [integerPart, decimalPart] = value.split('.');
+            const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            const formattedValue = decimalPart !== undefined
+                ? formattedInteger + '.' + decimalPart
+                : formattedInteger;
+
+            input.value = formattedValue;
+
+            const newLength = formattedValue.length;
+            const diff = newLength - oldLength;
+            input.setSelectionRange(cursorPosition + diff, cursorPosition + diff);
+        }
+
+        function parseAmount(formattedValue) {
+            return parseFloat(formattedValue.replace(/,/g, ''));
+        }
+
+        async function calculate() {
+            const amountInput = document.getElementById('amount').value;
+            const amount = parseAmount(amountInput);
+
+            if (!selectedCoin || !amount || amount <= 0 || isNaN(amount)) {
+                document.getElementById('result').style.display = 'none';
+                return;
+            }
+
+            await getUsdtKrwRate();
+
+            const usdtTotal = selectedCoin.currentPrice * amount;
+            const krwTotal = usdtTotal * usdtKrwRate;
+
+            document.getElementById('usdtTotal').textContent = '$' + formatNumber(usdtTotal.toFixed(2));
+            document.getElementById('krwTotal').textContent = '₩' + formatNumber(Math.round(krwTotal));
+            document.getElementById('coinPrice').textContent = `1 ${selectedCoin.symbol.toUpperCase()} = $${formatNumber(selectedCoin.currentPrice)}`;
+            document.getElementById('exchangeRate').textContent = `USDT/KRW: ₩${formatNumber(usdtKrwRate.toFixed(2))}`;
+
+            // 체인, 거래소, 지갑 정보 표시
+            displayChainInfo(selectedCoin.platforms);
+            displayExchangeInfo(selectedCoin.tickers);
+            displayWalletInfo(selectedCoin.platforms);
+
+            const link = document.getElementById('coingeckoLink');
+            link.href = `https://www.coingecko.com/en/coins/${selectedCoin.id}`;
+            link.style.display = 'inline-block';
+
+            document.getElementById('result').style.display = 'block';
+        }
+
+        // ========== 과거 조회 탭 함수 ==========
+
+        async function searchHistoricalCoin(ticker) {
+            const errorElement = document.getElementById('histError');
+
+            if (!ticker) {
+                document.getElementById('histCoinOptions').style.display = 'none';
+                errorElement.textContent = '';
+                return;
+            }
+
+            document.getElementById('histLoading').style.display = 'block';
+            errorElement.innerHTML = '';
+            document.getElementById('histCoinOptions').style.display = 'none';
+
+            // 기존 에러 링크 제거
+            const existingLink = errorElement.nextElementSibling;
+            if (existingLink && existingLink.classList.contains('error-link')) {
+                existingLink.remove();
+            }
+
+            try {
+                const response = await fetch(`https://api.coingecko.com/api/v3/search?query=${ticker}`);
+
+                // API 쿨타임 오류 (429)
+                if (response.status === 429) {
+                    document.getElementById('histLoading').style.display = 'none';
+                    showError(
+                        errorElement,
+                        '⏳ 잠시 후 다시 시도해주세요',
+                        'API 호출 제한입니다. 10-30초 후 다시 시도해주세요.',
+                        '🔗 CoinGecko에서 직접 검색하기',
+                        'https://www.coingecko.com/'
+                    );
+                    return;
+                }
+
+                // 서버 오류 (500번대)
+                if (response.status >= 500) {
+                    document.getElementById('histLoading').style.display = 'none';
+                    showError(
+                        errorElement,
+                        '⚠️ 서버 오류',
+                        '일시적인 문제입니다. 잠시 후 다시 시도해주세요.'
+                    );
+                    return;
+                }
+
+                const data = await response.json();
+
+                if (data.coins && data.coins.length > 0) {
+                    const matchingCoins = data.coins.filter(coin =>
+                        coin.symbol.toLowerCase() === ticker.toLowerCase()
+                    );
+
+                    if (matchingCoins.length === 0) {
+                        document.getElementById('histLoading').style.display = 'none';
+                        showError(
+                            errorElement,
+                            '❌ 검색 결과 없음',
+                            `"${ticker}"에 해당하는 코인을 찾을 수 없습니다.\n티커 또는 이름을 확인해주세요.`,
+                            '🔗 CoinGecko에서 직접 검색하기',
+                            'https://www.coingecko.com/'
+                        );
+                        return;
+                    }
+
+                    const coinDetails = await Promise.all(
+                        matchingCoins.slice(0, 10).map(async (coin) => {
+                            try {
+                                const detailResponse = await fetch(`https://api.coingecko.com/api/v3/coins/${coin.id}`);
+                                const detail = await detailResponse.json();
+                                return {
+                                    id: coin.id,
+                                    symbol: coin.symbol,
+                                    name: coin.name,
+                                    marketCap: detail.market_data?.market_cap?.usd || 0,
+                                    thumb: coin.thumb
+                                };
+                            } catch (e) {
+                                return null;
+                            }
+                        })
+                    );
+
+                    const validCoins = coinDetails.filter(c => c !== null)
+                        .sort((a, b) => b.marketCap - a.marketCap);
+
+                    if (validCoins.length === 0) {
+                        document.getElementById('histLoading').style.display = 'none';
+                        showError(
+                            errorElement,
+                            '⚠️ 가격 정보 없음',
+                            `"${ticker}" 코인의 가격 정보를 찾을 수 없습니다.`
+                        );
+                        return;
+                    }
+
+                    displayHistoricalCoinOptions(validCoins);
+                } else {
+                    showError(
+                        errorElement,
+                        '❌ 검색 결과 없음',
+                        `"${ticker}"에 해당하는 코인을 찾을 수 없습니다.\n티커 또는 이름을 확인해주세요.`,
+                        '🔗 CoinGecko에서 직접 검색하기',
+                        'https://www.coingecko.com/'
+                    );
+                }
+            } catch (error) {
+                console.error(error);
+                showError(
+                    errorElement,
+                    '⚠️ 네트워크 연결 오류',
+                    '인터넷 연결을 확인해주세요.'
+                );
+            }
+
+            document.getElementById('histLoading').style.display = 'none';
+        }
+
+        function displayHistoricalCoinOptions(coins) {
+            const container = document.getElementById('histCoinOptions');
+            container.innerHTML = '';
+            container.style.display = 'block';
+
+            coins.forEach((coin, index) => {
+                const option = document.createElement('div');
+                option.className = 'coin-option';
+                if (index === 0) {
+                    option.classList.add('selected');
+                    histSelectedCoin = coin;
+                }
+
+                option.innerHTML = `
+                    <div class="coin-name">
+                        ${coin.name} <span class="coin-ticker">(${coin.symbol.toUpperCase()})</span>
+                        ${index === 0 ? '<span class="rank-badge">시총 1위</span>' : ''}
+                    </div>
+                    <div class="coin-market-cap">
+                        시총: ${formatMarketCap(coin.marketCap)}
+                    </div>
+                `;
+
+                option.addEventListener('click', () => {
+                    document.querySelectorAll('#histCoinOptions .coin-option').forEach(opt => {
+                        opt.classList.remove('selected');
+                    });
+                    option.classList.add('selected');
+                    histSelectedCoin = coin;
+                    calculateHistorical();
+                });
+
+                container.appendChild(option);
+            });
+
+            calculateHistorical();
+        }
+
+        async function getHistoricalPriceFromCoinGecko(coinId, date) {
+            try {
+                const response = await fetch(
+                    `https://api.coingecko.com/api/v3/coins/${coinId}/history?date=${date}`
+                );
+                const data = await response.json();
+                return data.market_data?.current_price?.usd || null;
+            } catch (error) {
+                console.error('CoinGecko 과거 가격 조회 오류:', error);
+                return null;
+            }
+        }
+
+        async function getHistoricalPriceFromDeribit(currency, timestamp) {
+            try {
+                // Deribit API를 사용하여 특정 날짜의 Index 종가 조회
+                const response = await fetch(
+                    `https://www.deribit.com/api/v2/public/get_tradingview_chart_data?instrument_name=${currency}_usd&start_timestamp=${timestamp}&end_timestamp=${timestamp + 86400000}&resolution=1D`
+                );
+                const data = await response.json();
+
+                if (data.result && data.result.close && data.result.close.length > 0) {
+                    return data.result.close[0];
+                }
+                return null;
+            } catch (error) {
+                console.error('Deribit 과거 가격 조회 오류:', error);
+                return null;
+            }
+        }
+
+        async function getUsdKrwRate(date) {
+            // 실제로는 과거 USD/KRW 환율 API를 사용해야 하지만,
+            // 여기서는 exchangerate-api.com을 사용 (무료, 과거 데이터 제한적)
+            try {
+                const response = await fetch(`https://api.exchangerate-api.com/v4/latest/USD`);
+                const data = await response.json();
+                return data.rates.KRW || 1300; // 기본값
+            } catch (error) {
+                console.error('USD/KRW 환율 조회 오류:', error);
+                return 1300; // 기본값
+            }
+        }
+
+        async function calculateHistorical() {
+            const date = document.getElementById('histDate').value;
+            const amountInput = document.getElementById('histAmount').value;
+            const amount = parseAmount(amountInput);
+            const isDeribit = document.getElementById('sourceDeribit').checked;
+
+            if (!date || !amount || amount <= 0 || isNaN(amount)) {
+                document.getElementById('histResult').style.display = 'none';
+                return;
+            }
+
+            if (isDeribit) {
+                const currency = document.getElementById('histCoinSelect').value;
+                await calculateDeribitHistorical(currency, date, amount);
+            } else {
+                if (!histSelectedCoin) {
+                    document.getElementById('histResult').style.display = 'none';
+                    return;
+                }
+                await calculateCoinGeckoHistorical(histSelectedCoin, date, amount);
+            }
+        }
+
+        async function calculateCoinGeckoHistorical(coin, dateStr, amount) {
+            const [year, month, day] = dateStr.split('-');
+            const formattedDate = `${day}-${month}-${year}`;
+
+            const price = await getHistoricalPriceFromCoinGecko(coin.id, formattedDate);
+
+            if (!price) {
+                const errorElement = document.getElementById('histError');
+                showError(
+                    errorElement,
+                    '⚠️ 가격 정보 없음',
+                    '해당 날짜의 가격 정보를 찾을 수 없습니다.'
+                );
+                return;
+            }
+
+            await getUsdtKrwRate();
+
+            const usdtTotal = price * amount;
+            const krwTotal = usdtTotal * usdtKrwRate;
+
+            document.getElementById('histResultDate').textContent = `${dateStr} 기준 (일평균 가격)`;
+            document.getElementById('histUsdLabel').textContent = 'USDT 총액';
+            document.getElementById('histUsdtTotal').textContent = '$' + formatNumber(usdtTotal.toFixed(2));
+            document.getElementById('histKrwTotal').textContent = '₩' + formatNumber(Math.round(krwTotal));
+            document.getElementById('histCoinPrice').textContent = `1 ${coin.symbol.toUpperCase()} = $${formatNumber(price)}`;
+            document.getElementById('histCoinPriceSource').textContent = '* 기준: CoinGecko';
+            document.getElementById('histExchangeRate').textContent = `USDT/KRW: ₩${formatNumber(usdtKrwRate.toFixed(2))}`;
+
+            const link = document.getElementById('histLink');
+            link.href = `https://www.coingecko.com/en/coins/${coin.id}`;
+            link.style.display = 'inline-block';
+            link.textContent = '🔗 CoinGecko에서 확인하기';
+
+            document.getElementById('histError').textContent = '';
+            document.getElementById('histResult').style.display = 'block';
+        }
+
+        async function calculateDeribitHistorical(currency, dateStr, amount) {
+            const errorElement = document.getElementById('histError');
+
+            // Deribit API는 현재 사용 불가 메시지 표시
+            showError(
+                errorElement,
+                '⚠️ API를 불러올 수 없습니다',
+                'Deribit Index는 현재 API를 제공하지 않습니다.\n(이 프로젝트는 샘플로, 데이터 소스 확장 가능성을 보여줍니다)',
+                '🔗 Deribit에서 직접 확인하기',
+                getDeribitUrl(currency)
+            );
+            return;
+
+            // 아래 코드는 실제 API가 제공될 때 사용
+            /*
+            const timestamp = new Date(dateStr + 'T00:00:00Z').getTime();
+            const price = await getHistoricalPriceFromDeribit(currency, timestamp);
+
+            if (!price) {
+                showError(
+                    errorElement,
+                    '⚠️ 가격 정보 없음',
+                    '해당 날짜의 가격 정보를 찾을 수 없습니다.'
+                );
+                return;
+            }
+
+            const usdKrwRate = await getUsdKrwRate(dateStr);
+
+            const usdTotal = price * amount;
+            const krwTotal = usdTotal * usdKrwRate;
+
+            const koreaDate = new Date(timestamp + (9 * 60 * 60 * 1000));
+            document.getElementById('histResultDate').textContent =
+                `${dateStr} UTC 00:00 종가 기준 (한국시간 ${koreaDate.toLocaleString('ko-KR', {hour: '2-digit', minute: '2-digit'})})`;
+            document.getElementById('histUsdLabel').textContent = 'USD 총액';
+            document.getElementById('histUsdtTotal').textContent = '$' + formatNumber(usdTotal.toFixed(2));
+            document.getElementById('histKrwTotal').textContent = '₩' + formatNumber(Math.round(krwTotal));
+            document.getElementById('histCoinPrice').textContent = `1 ${currency} = $${formatNumber(price)} (종가)`;
+            document.getElementById('histCoinPriceSource').textContent = '* 기준: Deribit Index';
+            document.getElementById('histExchangeRate').textContent = `USD/KRW: ₩${formatNumber(usdKrwRate.toFixed(2))}`;
+
+            const link = document.getElementById('histLink');
+            link.href = getDeribitUrl(currency);
+            link.style.display = 'inline-block';
+            link.textContent = '🔗 Deribit에서 확인하기';
+
+            document.getElementById('histError').textContent = '';
+            document.getElementById('histResult').style.display = 'block';
+            */
+        }
+
+        // ========== 이벤트 리스너 ==========
+
+        // 실시간 탭
+        document.getElementById('ticker').addEventListener('input', (e) => {
+            const ticker = e.target.value.trim();
+
+            // 이스터에그 숨기기
+            document.getElementById('easterEgg').style.display = 'none';
+
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                searchCoin(ticker);
+            }, 500);
+        });
+
+        const amountInput = document.getElementById('amount');
+        amountInput.addEventListener('input', (e) => {
+            formatAmountInput(e.target);
+
+            // 이스터에그 체크
+            const ticker = document.getElementById('ticker').value.trim();
+            const amount = parseAmount(e.target.value);
+
+            if (checkEasterEgg(ticker, amount)) {
+                return;
+            }
+
+            calculate();
+        });
+
+        // 과거 조회 탭
+        document.getElementById('histTicker').addEventListener('input', (e) => {
+            clearTimeout(histDebounceTimer);
+            histDebounceTimer = setTimeout(() => {
+                searchHistoricalCoin(e.target.value.trim());
+            }, 500);
+        });
+
+        const histAmountInput = document.getElementById('histAmount');
+        histAmountInput.addEventListener('input', (e) => {
+            formatAmountInput(e.target);
+            calculateHistorical();
+        });
+
+        document.getElementById('histDate').addEventListener('change', calculateHistorical);
+        document.getElementById('histCoinSelect').addEventListener('change', calculateHistorical);
+
+        // 초기화
+        initRealtimeSourceOptions();
+        loadSavedCoin();
+        getUsdtKrwRate();
+
+        // 오늘 날짜를 기본값으로 설정
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('histDate').value = today;
+    </script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(start \"\" \"c:\\\\Users\\\\Patrick\\\\Documents\\\\개발\\\\코인계산기_test project\\\\altcoin-price-calculator.html\")"
+    ]
+  }
+}
