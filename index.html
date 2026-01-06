@@ -990,6 +990,33 @@
             'XPLA': { apiId: 'xpla', newName: 'CONX', oldName: 'XPLA' }
         };
 
+        // 메이저 코인 (자체 블록체인) - 특수 처리
+        const majorNativeCoins = {
+            'bitcoin': { chain: 'bitcoin', name: 'Bitcoin', icon: 'https://cryptologos.cc/logos/bitcoin-btc-logo.svg' },
+            'ethereum': { chain: 'ethereum', name: 'Ethereum', icon: 'https://cryptologos.cc/logos/ethereum-eth-logo.svg' },
+            'solana': { chain: 'solana', name: 'Solana', icon: 'https://cryptologos.cc/logos/solana-sol-logo.svg' },
+            'binancecoin': { chain: 'binance-smart-chain', name: 'BNB Chain', icon: 'https://cryptologos.cc/logos/bnb-bnb-logo.svg' },
+            'cardano': { chain: 'cardano', name: 'Cardano', icon: 'https://cryptologos.cc/logos/cardano-ada-logo.svg' },
+            'avalanche-2': { chain: 'avalanche', name: 'Avalanche', icon: 'https://cryptologos.cc/logos/avalanche-avax-logo.svg' },
+            'polkadot': { chain: 'polkadot', name: 'Polkadot', icon: 'https://cryptologos.cc/logos/polkadot-new-dot-logo.svg' },
+            'cosmos': { chain: 'cosmos', name: 'Cosmos', icon: 'https://cryptologos.cc/logos/cosmos-atom-logo.svg' },
+            'stellar': { chain: 'stellar', name: 'Stellar', icon: 'https://cryptologos.cc/logos/stellar-xlm-logo.svg' },
+            'tron': { chain: 'tron', name: 'TRON', icon: 'https://cryptologos.cc/logos/tron-trx-logo.svg' }
+        };
+
+        // 네트워크 아이콘 매핑
+        const networkIcons = {
+            'ethereum': 'https://cryptologos.cc/logos/ethereum-eth-logo.svg',
+            'bitcoin': 'https://cryptologos.cc/logos/bitcoin-btc-logo.svg',
+            'binance-smart-chain': 'https://cryptologos.cc/logos/bnb-bnb-logo.svg',
+            'polygon-pos': 'https://cryptologos.cc/logos/polygon-matic-logo.svg',
+            'arbitrum-one': 'https://cryptologos.cc/logos/arbitrum-arb-logo.svg',
+            'optimistic-ethereum': 'https://cryptologos.cc/logos/optimism-ethereum-op-logo.svg',
+            'base': 'https://cryptologos.cc/logos/base-logo.svg',
+            'avalanche': 'https://cryptologos.cc/logos/avalanche-avax-logo.svg',
+            'solana': 'https://cryptologos.cc/logos/solana-sol-logo.svg'
+        };
+
         // 지갑 지원 체인 리스트
         const walletSupport = {
             fireblocks: ['ethereum', 'bitcoin', 'binance-smart-chain', 'polygon-pos', 'arbitrum-one', 'optimistic-ethereum', 'avalanche', 'solana', 'polkadot', 'cardano', 'stellar', 'tron', 'cosmos'],
@@ -1060,37 +1087,64 @@
         }
 
         // 체인 정보 표시
-        function displayChainInfo(platforms) {
+        function displayChainInfo(platforms, coinId) {
             const chainInfoSection = document.getElementById('chainInfo');
             const chainList = document.getElementById('chainList');
 
-            if (!platforms || Object.keys(platforms).length === 0) {
+            // 지원 체인 수집
+            let supportedChains = [];
+
+            // 메이저 네이티브 코인 체크
+            if (majorNativeCoins[coinId]) {
+                const nativeCoin = majorNativeCoins[coinId];
+                supportedChains.push({
+                    id: nativeCoin.chain,
+                    name: nativeCoin.name,
+                    icon: nativeCoin.icon,
+                    isNative: true,
+                    isMajor: true
+                });
+            }
+
+            // platforms에서 체인 추출
+            if (platforms && Object.keys(platforms).length > 0) {
+                Object.keys(platforms).forEach(chain => {
+                    // 이미 네이티브로 추가된 경우 스킵
+                    if (majorNativeCoins[coinId] && majorNativeCoins[coinId].chain === chain) {
+                        return;
+                    }
+
+                    supportedChains.push({
+                        id: chain,
+                        name: chainNameMap[chain] || chain.charAt(0).toUpperCase() + chain.slice(1).replace(/-/g, ' '),
+                        icon: networkIcons[chain],
+                        isNative: false,
+                        isMajor: majorNetworks.includes(chain)
+                    });
+                });
+            }
+
+            if (supportedChains.length === 0) {
                 chainInfoSection.style.display = 'none';
                 return;
             }
 
-            const chains = Object.keys(platforms);
-            const ethereumChains = chains.filter(c => c === 'ethereum');
-            const majorChains = chains.filter(c => c !== 'ethereum' && majorNetworks.includes(c));
-            const nativeChains = chains.filter(c => c !== 'ethereum' && !majorNetworks.includes(c));
+            // 정렬: 네이티브 > 메이저 > 기타
+            supportedChains.sort((a, b) => {
+                if (a.isNative && !b.isNative) return -1;
+                if (!a.isNative && b.isNative) return 1;
+                if (a.isMajor && !b.isMajor) return -1;
+                if (!a.isMajor && b.isMajor) return 1;
+                return 0;
+            });
 
             let chainHTML = '';
+            supportedChains.forEach(chain => {
+                const icon = chain.icon
+                    ? `<img src="${chain.icon}" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 6px;" onerror="this.style.display='none'">`
+                    : (chain.isMajor ? '✅ ' : '⚪ ');
 
-            // Ethereum 최우선
-            ethereumChains.forEach(chain => {
-                chainHTML += `<div class="info-item">✅ ${chainNameMap[chain] || chain}</div>`;
-            });
-
-            // 메이저 네트워크
-            majorChains.forEach(chain => {
-                chainHTML += `<div class="info-item">✅ ${chainNameMap[chain] || chain}</div>`;
-            });
-
-            // 자체 메인넷 (최대 5개까지만 표시)
-            const displayNative = nativeChains.slice(0, 5 - ethereumChains.length - majorChains.length);
-            displayNative.forEach(chain => {
-                const displayName = chain.charAt(0).toUpperCase() + chain.slice(1).replace(/-/g, ' ');
-                chainHTML += `<div class="info-item">⚪ ${displayName} (자체 메인넷)</div>`;
+                chainHTML += `<div class="info-item">${icon}${chain.name}</div>`;
             });
 
             chainList.innerHTML = chainHTML;
