@@ -1644,8 +1644,8 @@
                     document.getElementById('loading').style.display = 'none';
                     showError(
                         errorElement,
-                        '⚠️ 검색 오류',
-                        'API 호출에 문제가 발생했습니다.\n상단 외부 검색에서 CoinMarketCap을 이용해주세요.',
+                        '⏳ 잠시 후 다시 시도해주세요',
+                        'API 호출 제한입니다. 10-30초 후 다시 시도해주세요.',
                         '🔗 CoinMarketCap에서 직접 검색하기',
                         'https://coinmarketcap.com/'
                     );
@@ -1658,8 +1658,8 @@
                     document.getElementById('loading').style.display = 'none';
                     showError(
                         errorElement,
-                        '⚠️ 검색 오류',
-                        'API 호출에 문제가 발생했습니다.\n상단 외부 검색에서 CoinMarketCap을 이용해주세요.',
+                        '⚠️ 서버 오류',
+                        '일시적인 문제입니다. 잠시 후 다시 시도해주세요.',
                         '🔗 CoinMarketCap에서 직접 검색하기',
                         'https://coinmarketcap.com/'
                     );
@@ -1672,8 +1672,8 @@
                     document.getElementById('loading').style.display = 'none';
                     showError(
                         errorElement,
-                        '⚠️ 검색 오류',
-                        'API 호출에 문제가 발생했습니다.\n상단 외부 검색에서 CoinMarketCap을 이용해주세요.',
+                        '❌ 검색 실패',
+                        `서버 응답 오류가 발생했습니다. (${response.status})`,
                         '🔗 CoinMarketCap에서 직접 검색하기',
                         'https://coinmarketcap.com/'
                     );
@@ -1773,7 +1773,9 @@
                         showError(
                             errorElement,
                             '⚠️ 가격 정보 없음',
-                            `"${ticker}" 코인의 가격 정보를 찾을 수 없습니다.`
+                            `"${ticker}" 코인의 가격 정보를 찾을 수 없습니다.`,
+                            '🔗 CoinMarketCap에서 직접 검색하기',
+                            'https://coinmarketcap.com/'
                         );
                         return;
                     }
@@ -1862,7 +1864,7 @@
                 showError(
                     errorElement,
                     '⚠️ 네트워크 연결 오류',
-                    '인터넷 연결을 확인해주세요.\n상단 외부 검색에서 CoinMarketCap을 이용해주세요.',
+                    '인터넷 연결을 확인해주세요.',
                     '🔗 CoinMarketCap에서 직접 검색하기',
                     'https://coinmarketcap.com/'
                 );
