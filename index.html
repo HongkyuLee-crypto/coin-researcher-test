@@ -69,38 +69,40 @@
             font-size: 14px;
         }
 
-        .quick-links {
-            text-align: center;
-            margin-bottom: 20px;
-            padding: 12px;
+        .external-search-banner {
             background: #f5f5f5;
+            padding: 12px 20px;
             border-radius: 10px;
-        }
-
-        .quick-links-label {
-            font-size: 13px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 14px;
             color: #666;
-            margin-right: 8px;
-            font-weight: 500;
         }
 
-        .quick-link-btn {
-            display: inline-block;
+        .external-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
             padding: 6px 12px;
-            margin: 0 4px;
+            margin: 0 8px;
             background: white;
-            color: #555;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
             text-decoration: none;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 13px;
-            transition: all 0.2s;
+            color: #333;
+            font-weight: 500;
+            transition: all 0.3s;
         }
 
-        .quick-link-btn:hover {
+        .external-link:hover {
             background: #e8e8e8;
-            border-color: #ccc;
+            border-color: #667eea;
             transform: translateY(-1px);
+        }
+
+        .external-link img {
+            width: 20px;
+            height: 20px;
         }
 
         /* 탭 스타일 */
@@ -693,6 +695,22 @@
                 font-size: 18px;
             }
 
+            .external-search-banner {
+                font-size: 12px;
+                padding: 10px;
+            }
+
+            .external-link {
+                padding: 4px 8px;
+                margin: 4px;
+                font-size: 12px;
+            }
+
+            .external-link img {
+                width: 16px;
+                height: 16px;
+            }
+
             input, select {
                 min-height: 48px;
                 font-size: 16px;
@@ -769,12 +787,21 @@
         </h1>
         <p class="subtitle">OTC 딜을 위한 코인 분석 도구</p>
 
-        <!-- 빠른 검색 링크 -->
-        <div class="quick-links">
-            <span class="quick-links-label">🔗 빠른 검색:</span>
-            <a href="https://coinmarketcap.com/" target="_blank" class="quick-link-btn">📊 CoinMarketCap</a>
-            <a href="https://www.coingecko.com/" target="_blank" class="quick-link-btn">🦎 CoinGecko</a>
-            <a href="https://www.deribit.com/" target="_blank" class="quick-link-btn">📈 Deribit</a>
+        <!-- 외부 검색 배너 -->
+        <div class="external-search-banner">
+            🌐 외부 검색:
+            <a href="https://coinmarketcap.com/" target="_blank" class="external-link">
+                <img src="https://www.google.com/s2/favicons?domain=coinmarketcap.com&sz=32" alt="CMC">
+                CoinMarketCap
+            </a>
+            <a href="https://www.coingecko.com/" target="_blank" class="external-link">
+                <img src="https://www.google.com/s2/favicons?domain=coingecko.com&sz=32" alt="CoinGecko">
+                CoinGecko
+            </a>
+            <a href="https://www.deribit.com/" target="_blank" class="external-link">
+                <img src="https://www.google.com/s2/favicons?domain=deribit.com&sz=32" alt="Deribit">
+                Deribit
+            </a>
         </div>
 
         <!-- 탭 -->
@@ -1453,6 +1480,7 @@
 
         async function searchCoin(ticker) {
             const errorElement = document.getElementById('error');
+            const selectedSource = document.querySelector('input[name="realtimeSource"]:checked')?.value || 'auto';
 
             console.log('🔍 검색어:', ticker);
 
@@ -1461,6 +1489,34 @@
                 errorElement.textContent = '';
                 return;
             }
+
+            // CMC 선택 시 준비 중 메시지
+            if (selectedSource === 'coinmarketcap') {
+                showError(
+                    errorElement,
+                    '🚧 준비 중입니다',
+                    'CoinMarketCap API 연동을 준비 중입니다.\n상단 외부 검색에서 직접 확인해주세요.',
+                    '🔗 CoinMarketCap에서 직접 검색하기',
+                    'https://coinmarketcap.com/'
+                );
+                document.getElementById('loading').style.display = 'none';
+                return;
+            }
+
+            // Deribit 선택 시 준비 중 메시지
+            if (selectedSource === 'deribit') {
+                showError(
+                    errorElement,
+                    '🚧 준비 중입니다',
+                    'Deribit API 연동을 준비 중입니다.',
+                    '🔗 Deribit에서 직접 확인하기',
+                    'https://www.deribit.com/'
+                );
+                document.getElementById('loading').style.display = 'none';
+                return;
+            }
+
+            // Auto 또는 CoinGecko → CoinGecko API 사용
 
             // 캐시 확인
             const cacheKey = ticker.toLowerCase();
@@ -1513,10 +1569,10 @@
                     document.getElementById('loading').style.display = 'none';
                     showError(
                         errorElement,
-                        '⏳ 잠시 후 다시 시도해주세요',
-                        'API 호출 제한입니다. 10-30초 후 다시 시도해주세요.',
-                        '🔗 CoinGecko에서 직접 검색하기',
-                        'https://www.coingecko.com/'
+                        '⚠️ 검색 오류',
+                        'API 호출에 문제가 발생했습니다.\n상단 외부 검색에서 CoinMarketCap을 이용해주세요.',
+                        '🔗 CoinMarketCap에서 직접 검색하기',
+                        'https://coinmarketcap.com/'
                     );
                     return;
                 }
@@ -1527,8 +1583,10 @@
                     document.getElementById('loading').style.display = 'none';
                     showError(
                         errorElement,
-                        '⚠️ 서버 오류',
-                        '일시적인 문제입니다. 잠시 후 다시 시도해주세요.'
+                        '⚠️ 검색 오류',
+                        'API 호출에 문제가 발생했습니다.\n상단 외부 검색에서 CoinMarketCap을 이용해주세요.',
+                        '🔗 CoinMarketCap에서 직접 검색하기',
+                        'https://coinmarketcap.com/'
                     );
                     return;
                 }
@@ -1539,10 +1597,10 @@
                     document.getElementById('loading').style.display = 'none';
                     showError(
                         errorElement,
-                        '❌ 검색 실패',
-                        `서버 응답 오류가 발생했습니다. (${response.status})`,
-                        '🔗 CoinGecko에서 직접 검색하기',
-                        'https://www.coingecko.com/'
+                        '⚠️ 검색 오류',
+                        'API 호출에 문제가 발생했습니다.\n상단 외부 검색에서 CoinMarketCap을 이용해주세요.',
+                        '🔗 CoinMarketCap에서 직접 검색하기',
+                        'https://coinmarketcap.com/'
                     );
                     return;
                 }
@@ -1661,8 +1719,8 @@
                         errorElement,
                         '❌ 검색 결과 없음',
                         `"${ticker}"에 해당하는 코인을 찾을 수 없습니다.\n티커 또는 이름을 확인해주세요.`,
-                        '🔗 CoinGecko에서 직접 검색하기',
-                        'https://www.coingecko.com/'
+                        '🔗 CoinMarketCap에서 직접 검색하기',
+                        'https://coinmarketcap.com/'
                     );
                 }
             } catch (error) {
@@ -1670,7 +1728,9 @@
                 showError(
                     errorElement,
                     '⚠️ 네트워크 연결 오류',
-                    '인터넷 연결을 확인해주세요.'
+                    '인터넷 연결을 확인해주세요.\n상단 외부 검색에서 CoinMarketCap을 이용해주세요.',
+                    '🔗 CoinMarketCap에서 직접 검색하기',
+                    'https://coinmarketcap.com/'
                 );
             }
 
@@ -1786,13 +1846,26 @@
             document.getElementById('coinPrice').textContent = `1 ${selectedCoin.symbol.toUpperCase()} = $${formatNumber(selectedCoin.currentPrice)}`;
             document.getElementById('exchangeRate').textContent = `USDT/KRW: ₩${formatNumber(usdtKrwRate.toFixed(2))}`;
 
-            // 체인, 거래소, 지갑 정보 표시
-            displayChainInfo(selectedCoin.platforms);
-            displayExchangeInfo(selectedCoin.tickers);
-            displayWalletInfo(selectedCoin.platforms);
+            // 데이터 소스 표시
+            const selectedSource = document.querySelector('input[name="realtimeSource"]:checked')?.value || 'auto';
+            const sourceDisplay = selectedSource === 'auto' ? 'CoinGecko' : 'CoinGecko';
+            document.getElementById('coinPriceSource').textContent = `* 기준: ${sourceDisplay}`;
 
+            // 체인, 거래소, 지갑 정보 표시
+            displayChainInfo(selectedCoin.platforms, selectedCoin.id);
+            displayExchangeInfo(selectedCoin.tickers);
+            displayWalletInfo(selectedCoin.platforms, selectedCoin.id);
+
+            // 링크 자동 변경
             const link = document.getElementById('coingeckoLink');
-            link.href = `https://www.coingecko.com/en/coins/${selectedCoin.id}`;
+            if (selectedSource === 'coinmarketcap') {
+                link.href = `https://coinmarketcap.com/currencies/${selectedCoin.id}/`;
+                link.textContent = '🔗 CoinMarketCap에서 확인하기';
+            } else {
+                // Auto 또는 CoinGecko
+                link.href = `https://www.coingecko.com/en/coins/${selectedCoin.id}`;
+                link.textContent = '🔗 CoinGecko에서 확인하기';
+            }
             link.style.display = 'inline-block';
 
             document.getElementById('result').style.display = 'block';
@@ -1827,10 +1900,10 @@
                     document.getElementById('histLoading').style.display = 'none';
                     showError(
                         errorElement,
-                        '⏳ 잠시 후 다시 시도해주세요',
-                        'API 호출 제한입니다. 10-30초 후 다시 시도해주세요.',
-                        '🔗 CoinGecko에서 직접 검색하기',
-                        'https://www.coingecko.com/'
+                        '⚠️ 검색 오류',
+                        'API 호출에 문제가 발생했습니다.\n상단 외부 검색에서 CoinMarketCap을 이용해주세요.',
+                        '🔗 CoinMarketCap에서 직접 검색하기',
+                        'https://coinmarketcap.com/'
                     );
                     return;
                 }
@@ -1840,8 +1913,10 @@
                     document.getElementById('histLoading').style.display = 'none';
                     showError(
                         errorElement,
-                        '⚠️ 서버 오류',
-                        '일시적인 문제입니다. 잠시 후 다시 시도해주세요.'
+                        '⚠️ 검색 오류',
+                        'API 호출에 문제가 발생했습니다.\n상단 외부 검색에서 CoinMarketCap을 이용해주세요.',
+                        '🔗 CoinMarketCap에서 직접 검색하기',
+                        'https://coinmarketcap.com/'
                     );
                     return;
                 }
@@ -1859,8 +1934,8 @@
                             errorElement,
                             '❌ 검색 결과 없음',
                             `"${ticker}"에 해당하는 코인을 찾을 수 없습니다.\n티커 또는 이름을 확인해주세요.`,
-                            '🔗 CoinGecko에서 직접 검색하기',
-                            'https://www.coingecko.com/'
+                            '🔗 CoinMarketCap에서 직접 검색하기',
+                            'https://coinmarketcap.com/'
                         );
                         return;
                     }
@@ -1902,8 +1977,8 @@
                         errorElement,
                         '❌ 검색 결과 없음',
                         `"${ticker}"에 해당하는 코인을 찾을 수 없습니다.\n티커 또는 이름을 확인해주세요.`,
-                        '🔗 CoinGecko에서 직접 검색하기',
-                        'https://www.coingecko.com/'
+                        '🔗 CoinMarketCap에서 직접 검색하기',
+                        'https://coinmarketcap.com/'
                     );
                 }
             } catch (error) {
@@ -1911,7 +1986,9 @@
                 showError(
                     errorElement,
                     '⚠️ 네트워크 연결 오류',
-                    '인터넷 연결을 확인해주세요.'
+                    '인터넷 연결을 확인해주세요.\n상단 외부 검색에서 CoinMarketCap을 이용해주세요.',
+                    '🔗 CoinMarketCap에서 직접 검색하기',
+                    'https://coinmarketcap.com/'
                 );
             }
 
