@@ -1747,6 +1747,24 @@
                         topCoins.map(async (coin) => {
                             try {
                                 const detailResponse = await fetch(`https://api.coingecko.com/api/v3/coins/${coin.id}`);
+
+                                // 429 에러 체크
+                                if (detailResponse.status === 429) {
+                                    console.error('❌ API 제한:', coin.id);
+                                    return { error: 429 };
+                                }
+
+                                // 500번대 에러 체크
+                                if (detailResponse.status >= 500) {
+                                    console.error('❌ 서버 오류:', coin.id, detailResponse.status);
+                                    return { error: 500 };
+                                }
+
+                                if (!detailResponse.ok) {
+                                    console.error('❌ HTTP 오류:', coin.id, detailResponse.status);
+                                    return null;
+                                }
+
                                 const detail = await detailResponse.json();
                                 return {
                                     id: coin.id,
@@ -1766,7 +1784,35 @@
                         })
                     );
 
-                    const validCoins = coinDetails.filter(c => c !== null);
+                    // 에러 타입별 처리
+                    const has429Error = coinDetails.some(c => c && c.error === 429);
+                    const has500Error = coinDetails.some(c => c && c.error === 500);
+
+                    if (has429Error) {
+                        document.getElementById('loading').style.display = 'none';
+                        showError(
+                            errorElement,
+                            '⏳ 잠시 후 다시 시도해주세요',
+                            'API 호출 제한입니다. 10-30초 후 다시 시도해주세요.',
+                            '🔗 CoinMarketCap에서 직접 검색하기',
+                            'https://coinmarketcap.com/'
+                        );
+                        return;
+                    }
+
+                    if (has500Error) {
+                        document.getElementById('loading').style.display = 'none';
+                        showError(
+                            errorElement,
+                            '⚠️ 서버 오류',
+                            '일시적인 문제입니다. 잠시 후 다시 시도해주세요.',
+                            '🔗 CoinMarketCap에서 직접 검색하기',
+                            'https://coinmarketcap.com/'
+                        );
+                        return;
+                    }
+
+                    const validCoins = coinDetails.filter(c => c !== null && !c.error);
 
                     if (validCoins.length === 0) {
                         document.getElementById('loading').style.display = 'none';
