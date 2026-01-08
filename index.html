@@ -74,9 +74,13 @@
             padding: 12px 20px;
             border-radius: 10px;
             margin-bottom: 20px;
-            text-align: center;
             font-size: 14px;
             color: #666;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: nowrap;
+            gap: 8px;
         }
 
         .external-link {
@@ -698,6 +702,7 @@
             .external-search-banner {
                 font-size: 12px;
                 padding: 10px;
+                flex-wrap: wrap;
             }
 
             .external-link {
@@ -790,15 +795,15 @@
         <!-- 외부 검색 배너 -->
         <div class="external-search-banner">
             🌐 외부 검색:
-            <a href="https://coinmarketcap.com/" target="_blank" class="external-link">
+            <a href="https://coinmarketcap.com/" target="_blank" class="external-link" title="CoinMarketCap에서 코인 검색">
                 <img src="https://www.google.com/s2/favicons?domain=coinmarketcap.com&sz=32" alt="CMC">
                 CoinMarketCap
             </a>
-            <a href="https://www.coingecko.com/" target="_blank" class="external-link">
+            <a href="https://www.coingecko.com/" target="_blank" class="external-link" title="CoinGecko에서 코인 검색">
                 <img src="https://www.google.com/s2/favicons?domain=coingecko.com&sz=32" alt="CoinGecko">
                 CoinGecko
             </a>
-            <a href="https://www.deribit.com/" target="_blank" class="external-link">
+            <a href="https://www.deribit.com/" target="_blank" class="external-link" title="Deribit에서 코인 검색">
                 <img src="https://www.google.com/s2/favicons?domain=deribit.com&sz=32" alt="Deribit">
                 Deribit
             </a>
@@ -1093,6 +1098,20 @@
             'solana': 'https://cryptologos.cc/logos/solana-sol-logo.svg'
         };
 
+        // 메이저 네이티브 코인 체인 매핑 (wallet 용)
+        const majorNativeCoinsMap = {
+            'bitcoin': 'bitcoin',
+            'ethereum': 'ethereum',
+            'solana': 'solana',
+            'binancecoin': 'binance-smart-chain',
+            'cardano': 'cardano',
+            'polkadot': 'polkadot',
+            'avalanche-2': 'avalanche',
+            'cosmos': 'cosmos',
+            'stellar': 'stellar',
+            'tron': 'tron'
+        };
+
         // 지갑 지원 체인 리스트
         const walletSupport = {
             fireblocks: ['ethereum', 'bitcoin', 'binance-smart-chain', 'polygon-pos', 'arbitrum-one', 'optimistic-ethereum', 'avalanche', 'solana', 'polkadot', 'cardano', 'stellar', 'tron', 'cosmos'],
@@ -1288,29 +1307,52 @@
         }
 
         // 지갑 호환성 표시
-        function displayWalletInfo(platforms) {
+        function displayWalletInfo(platforms, coinId) {
             const walletInfoSection = document.getElementById('walletInfo');
             const walletList = document.getElementById('walletList');
 
-            if (!platforms || Object.keys(platforms).length === 0) {
+            // 지원 체인 수집
+            let supportedChains = [];
+
+            // 메이저 네이티브 코인 체크
+            if (majorNativeCoinsMap[coinId]) {
+                supportedChains.push(majorNativeCoinsMap[coinId]);
+                console.log('✅ 메이저 네이티브 코인 감지:', coinId, '→', majorNativeCoinsMap[coinId]);
+            }
+
+            // platforms에서 체인 추가
+            if (platforms && Object.keys(platforms).length > 0) {
+                supportedChains.push(...Object.keys(platforms));
+            }
+
+            // 중복 제거
+            supportedChains = [...new Set(supportedChains)];
+
+            console.log('🔗 지원 체인 목록:', supportedChains);
+
+            if (supportedChains.length === 0) {
                 walletInfoSection.style.display = 'none';
                 return;
             }
 
-            const chains = Object.keys(platforms);
-
             // Fireblocks 지원 확인
-            const fireblocksSupported = chains.some(chain => walletSupport.fireblocks.includes(chain));
+            const fireblocksSupported = supportedChains.some(chain =>
+                walletSupport.fireblocks.includes(chain)
+            );
 
             // MPC Vault 지원 확인
-            const mpcVaultSupported = chains.some(chain => walletSupport.mpcVault.includes(chain));
+            const mpcVaultSupported = supportedChains.some(chain =>
+                walletSupport.mpcVault.includes(chain)
+            );
+
+            console.log('💼 지갑 지원:', 'Fireblocks:', fireblocksSupported, 'MPC Vault:', mpcVaultSupported);
 
             let walletHTML = '';
 
             if (fireblocksSupported) {
                 walletHTML += '<div class="info-item">✅ Fireblocks 지원 가능</div>';
             } else {
-                walletHTML += '<div class="info-item">❌ Fireblocks 미지원 (자체 메인넷)</div>';
+                walletHTML += '<div class="info-item">❌ Fireblocks 미지원</div>';
             }
 
             if (mpcVaultSupported) {
@@ -1611,8 +1653,43 @@
                 if (data.coins && data.coins.length > 0) {
                     console.log('✅ 전체 검색 결과:', data.coins.length, '개');
 
-                    // 상위 10개만 가져오기
-                    const topCoins = data.coins.slice(0, 10);
+                    const searchTicker = ticker.toLowerCase();
+
+                    // 1단계: 정확 일치
+                    const exactMatch = data.coins.filter(coin =>
+                        coin.symbol.toLowerCase() === searchTicker
+                    );
+
+                    // 2단계: 시작 일치
+                    const startsMatch = data.coins.filter(coin =>
+                        coin.symbol.toLowerCase().startsWith(searchTicker) &&
+                        coin.symbol.toLowerCase() !== searchTicker
+                    );
+
+                    // 3단계: 포함
+                    const containsMatch = data.coins.filter(coin =>
+                        coin.symbol.toLowerCase().includes(searchTicker) &&
+                        !coin.symbol.toLowerCase().startsWith(searchTicker)
+                    );
+
+                    // 각 그룹 내에서 market_cap_rank 기준 정렬 (숫자 낮을수록 우선)
+                    const sortByRank = (a, b) => {
+                        const rankA = a.market_cap_rank || 99999;
+                        const rankB = b.market_cap_rank || 99999;
+                        return rankA - rankB;
+                    };
+
+                    exactMatch.sort(sortByRank);
+                    startsMatch.sort(sortByRank);
+                    containsMatch.sort(sortByRank);
+
+                    // 합치기: 정확 일치 → 시작 일치 → 포함
+                    const prioritizedCoins = [...exactMatch, ...startsMatch, ...containsMatch];
+
+                    console.log('📊 정렬 결과 - 정확:', exactMatch.length, '시작:', startsMatch.length, '포함:', containsMatch.length);
+
+                    // 상위 10개만 선택
+                    const topCoins = prioritizedCoins.slice(0, 10);
 
                     const coinDetails = await Promise.all(
                         topCoins.map(async (coin) => {
@@ -1649,9 +1726,9 @@
                         return;
                     }
 
-                    // 시총 순으로 정렬 (내림차순)
+                    // 시가총액 순 정렬 (내림차순) - validCoins 정렬
                     const sortedCoins = validCoins.sort((a, b) => b.marketCap - a.marketCap);
-                    console.log('📊 시총 순 정렬 완료:', sortedCoins.length, '개');
+                    console.log('📊 시가총액 순 정렬 완료:', sortedCoins.length, '개');
 
                     // 캐시에 저장
                     searchCache[cacheKey] = {
@@ -1659,7 +1736,6 @@
                         timestamp: Date.now()
                     };
                     console.log('💾 캐시 저장:', ticker);
-                    console.log('📡 API 호출:', ticker, '소스: CoinGecko');
 
                     // 실시간 조회 표시
                     const cacheInfoElement = document.getElementById('cacheInfo');
