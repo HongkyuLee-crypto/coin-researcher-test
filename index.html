@@ -65,8 +65,42 @@
         .subtitle {
             text-align: center;
             color: #666;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
             font-size: 14px;
+        }
+
+        .quick-links {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 12px;
+            background: #f5f5f5;
+            border-radius: 10px;
+        }
+
+        .quick-links-label {
+            font-size: 13px;
+            color: #666;
+            margin-right: 8px;
+            font-weight: 500;
+        }
+
+        .quick-link-btn {
+            display: inline-block;
+            padding: 6px 12px;
+            margin: 0 4px;
+            background: white;
+            color: #555;
+            text-decoration: none;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .quick-link-btn:hover {
+            background: #e8e8e8;
+            border-color: #ccc;
+            transform: translateY(-1px);
         }
 
         /* 탭 스타일 */
@@ -230,6 +264,13 @@
             color: #888;
             font-size: 12px;
             margin-top: 2px;
+        }
+
+        .cache-info {
+            font-size: 11px;
+            color: #999;
+            margin-top: 6px;
+            font-weight: 400;
         }
 
         .source-section {
@@ -728,6 +769,14 @@
         </h1>
         <p class="subtitle">OTC 딜을 위한 코인 분석 도구</p>
 
+        <!-- 빠른 검색 링크 -->
+        <div class="quick-links">
+            <span class="quick-links-label">🔗 빠른 검색:</span>
+            <a href="https://coinmarketcap.com/" target="_blank" class="quick-link-btn">📊 CoinMarketCap</a>
+            <a href="https://www.coingecko.com/" target="_blank" class="quick-link-btn">🦎 CoinGecko</a>
+            <a href="https://www.deribit.com/" target="_blank" class="quick-link-btn">📈 Deribit</a>
+        </div>
+
         <!-- 탭 -->
         <div class="tabs">
             <button class="tab active" onclick="switchTab('realtime')">실시간</button>
@@ -750,6 +799,7 @@
                     <div class="spinner"></div>코인 검색 중...
                 </div>
                 <div id="error" class="error"></div>
+                <div id="cacheInfo" class="cache-info" style="display: none;"></div>
                 <div id="coinOptions" class="coin-options"></div>
             </div>
 
@@ -773,7 +823,7 @@
 
                 <div class="result-footer-item">
                     <div id="coinPrice"></div>
-                    <div class="result-source">* 기준: CoinGecko</div>
+                    <div class="result-source" id="coinPriceSource">* 기준: CoinGecko</div>
                 </div>
 
                 <div style="margin-top: 15px;">
@@ -827,15 +877,8 @@
         <div id="historical" class="tab-content">
             <div class="input-group">
                 <label>기준</label>
-                <div class="radio-group">
-                    <div class="radio-option">
-                        <input type="radio" id="sourceCoinGecko" name="source" value="coingecko" checked onchange="onSourceChange()">
-                        <label for="sourceCoinGecko">CoinGecko</label>
-                    </div>
-                    <div class="radio-option">
-                        <input type="radio" id="sourceDeribit" name="source" value="deribit" onchange="onSourceChange()">
-                        <label for="sourceDeribit">Deribit Index (BTC/ETH/SOL)</label>
-                    </div>
+                <div class="radio-group" id="historicalSourceOptions">
+                    <!-- JavaScript로 동적 생성 -->
                 </div>
             </div>
 
@@ -974,16 +1017,22 @@
         let histSelectedCoin = null;
         let histDebounceTimer = null;
 
-        // API 캐싱 (3분)
+        // API 캐싱 (10분)
         const searchCache = {};
-        const CACHE_DURATION = 3 * 60 * 1000; // 180,000ms = 3분
+        const CACHE_DURATION = 10 * 60 * 1000; // 600,000ms = 10분
 
-        // 실시간 탭 데이터 소스 설정
-        const realtimeDataSources = [
-            { id: 'coingecko', name: 'CoinGecko', enabled: true, selected: true }
-            // 추후 추가 예시:
-            // { id: 'deribit', name: 'Deribit Index (BTC/ETH/SOL)', enabled: false, selected: false }
+        // 데이터 소스 설정 (실시간 및 과거 공통)
+        const dataSources = [
+            { id: 'auto', name: 'Auto (Fallback)', enabled: true, selected: true },
+            { id: 'coinmarketcap', name: 'CoinMarketCap', enabled: true, selected: false },
+            { id: 'coingecko', name: 'CoinGecko', enabled: true, selected: false },
+            { id: 'deribit', name: 'Deribit', enabled: false, selected: false }
         ];
+
+        // 현재 선택된 데이터 소스 추적
+        let currentRealtimeSource = 'auto';
+        let currentHistoricalSource = 'auto';
+        let lastUsedSource = null; // Auto 모드에서 실제 사용된 소스 추적
 
         // 티커 이름 변경 매핑
         const renamedTickers = {
@@ -1292,27 +1341,33 @@
         }
 
         // 실시간 탭 라디오 버튼 동적 생성
-        function initRealtimeSourceOptions() {
-            const container = document.getElementById('realtimeSourceOptions');
+        // 데이터 소스 옵션 초기화 (공통)
+        function initDataSourceOptions(containerId, sourceName) {
+            const container = document.getElementById(containerId);
             container.innerHTML = '';
 
-            realtimeDataSources.forEach((source, index) => {
+            dataSources.forEach((source) => {
                 const radioOption = document.createElement('div');
                 radioOption.className = 'radio-option';
 
                 const radioInput = document.createElement('input');
                 radioInput.type = 'radio';
-                radioInput.id = `realtimeSource${source.id}`;
-                radioInput.name = 'realtimeSource';
+                radioInput.id = `${sourceName}Source${source.id}`;
+                radioInput.name = `${sourceName}Source`;
                 radioInput.value = source.id;
                 radioInput.disabled = !source.enabled;
                 if (source.selected) {
                     radioInput.checked = true;
                 }
-                radioInput.addEventListener('change', onRealtimeSourceChange);
+
+                if (sourceName === 'realtime') {
+                    radioInput.addEventListener('change', onRealtimeSourceChange);
+                } else {
+                    radioInput.addEventListener('change', onHistoricalSourceChange);
+                }
 
                 const label = document.createElement('label');
-                label.htmlFor = `realtimeSource${source.id}`;
+                label.htmlFor = `${sourceName}Source${source.id}`;
                 label.textContent = source.name;
                 if (!source.enabled) {
                     label.style.color = '#ccc';
@@ -1326,12 +1381,19 @@
         }
 
         // 실시간 탭 데이터 소스 변경 이벤트
-        function onRealtimeSourceChange() {
-            // 현재는 CoinGecko만 있으므로 특별한 처리 없음
-            // 추후 다른 소스 추가 시 여기서 UI 변경 처리
+        function onRealtimeSourceChange(event) {
+            currentRealtimeSource = event.target.value;
             document.getElementById('coinOptions').style.display = 'none';
             document.getElementById('error').textContent = '';
             selectedCoin = null;
+        }
+
+        // 과거 탭 데이터 소스 변경 이벤트
+        function onHistoricalSourceChange(event) {
+            currentHistoricalSource = event.target.value;
+            document.getElementById('histCoinOptions').style.display = 'none';
+            document.getElementById('histError').textContent = '';
+            histSelectedCoin = null;
         }
 
         // 탭 전환
@@ -1347,15 +1409,6 @@
             document.getElementById('histResult').style.display = 'none';
         }
 
-        // 과거 조회 - 기준 변경
-        function onSourceChange() {
-            const isDeribit = document.getElementById('sourceDeribit').checked;
-            document.getElementById('histTicker').style.display = isDeribit ? 'none' : 'block';
-            document.getElementById('histCoinSelect').style.display = isDeribit ? 'block' : 'none';
-            document.getElementById('histCoinOptions').style.display = 'none';
-            document.getElementById('histError').textContent = '';
-            histSelectedCoin = null;
-        }
 
         // ========== 실시간 탭 함수 ==========
 
@@ -1411,12 +1464,30 @@
 
             // 캐시 확인
             const cacheKey = ticker.toLowerCase();
+            const cacheInfoElement = document.getElementById('cacheInfo');
+
             if (searchCache[cacheKey] && Date.now() - searchCache[cacheKey].timestamp < CACHE_DURATION) {
-                console.log('✅ 캐시 사용:', ticker);
+                const elapsedMs = Date.now() - searchCache[cacheKey].timestamp;
+                const elapsedMin = Math.floor(elapsedMs / 60000);
+
+                let cacheAgeText = '';
+                if (elapsedMin < 1) {
+                    cacheAgeText = '방금 전';
+                } else {
+                    cacheAgeText = `${elapsedMin}분 전`;
+                }
+
+                console.log('✅ 캐시 사용:', ticker, '경과 시간:', elapsedMin, '분');
+                cacheInfoElement.textContent = `ℹ️ 캐시 (${cacheAgeText})`;
+                cacheInfoElement.style.display = 'block';
+
                 displayCoinOptions(searchCache[cacheKey].data);
                 document.getElementById('loading').style.display = 'none';
                 return;
             }
+
+            // 새 조회 - 캐시 정보 숨김
+            cacheInfoElement.style.display = 'none';
 
             document.getElementById('loading').style.display = 'block';
             errorElement.innerHTML = '';
@@ -1530,6 +1601,12 @@
                         timestamp: Date.now()
                     };
                     console.log('💾 캐시 저장:', ticker);
+                    console.log('📡 API 호출:', ticker, '소스: CoinGecko');
+
+                    // 실시간 조회 표시
+                    const cacheInfoElement = document.getElementById('cacheInfo');
+                    cacheInfoElement.textContent = '🔄 실시간';
+                    cacheInfoElement.style.display = 'block';
 
                     displayCoinOptions(sortedCoins);
                 } else {
@@ -2081,10 +2158,10 @@
         });
 
         document.getElementById('histDate').addEventListener('change', calculateHistorical);
-        document.getElementById('histCoinSelect').addEventListener('change', calculateHistorical);
 
         // 초기화
-        initRealtimeSourceOptions();
+        initDataSourceOptions('realtimeSourceOptions', 'realtime');
+        initDataSourceOptions('historicalSourceOptions', 'historical');
         loadSavedCoin();
         getUsdtKrwRate();
 
