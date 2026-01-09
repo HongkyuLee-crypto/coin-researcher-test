@@ -1055,6 +1055,9 @@
     </div>
 
     <script>
+        // Vercel Proxy URL (CORS 우회)
+        const PROXY_URL = 'https://coin-researcher-test.vercel.app/api/proxy';
+
         // CoinGecko Demo API 키
         const COINGECKO_API_KEY = 'CG-QBQWihCEKKdJxUQZAJEK9bs2';
 
@@ -1632,7 +1635,8 @@
             }
 
             try {
-                const searchUrl = `https://api.coingecko.com/api/v3/search?query=${ticker}&x_cg_demo_api_key=${COINGECKO_API_KEY}`;
+                const apiUrl = `https://api.coingecko.com/api/v3/search?query=${ticker}&x_cg_demo_api_key=${COINGECKO_API_KEY}`;
+                const searchUrl = `${PROXY_URL}?url=${encodeURIComponent(apiUrl)}`;
                 console.log('📡 API 호출:', ticker);
                 console.log('📡 API URL:', searchUrl);
 
@@ -1747,7 +1751,9 @@
                     const coinDetails = await Promise.all(
                         topCoins.map(async (coin) => {
                             try {
-                                const detailResponse = await fetch(`https://api.coingecko.com/api/v3/coins/${coin.id}?x_cg_demo_api_key=${COINGECKO_API_KEY}`);
+                                const apiUrl = `https://api.coingecko.com/api/v3/coins/${coin.id}?x_cg_demo_api_key=${COINGECKO_API_KEY}`;
+                                const proxyUrl = `${PROXY_URL}?url=${encodeURIComponent(apiUrl)}`;
+                                const detailResponse = await fetch(proxyUrl);
 
                                 // 429 에러 체크
                                 if (detailResponse.status === 429) {
@@ -1861,7 +1867,8 @@
 
                         // 변경된 티커로 직접 조회
                         try {
-                            const directUrl = `https://api.coingecko.com/api/v3/coins/${renamed.apiId}?x_cg_demo_api_key=${COINGECKO_API_KEY}`;
+                            const apiUrl = `https://api.coingecko.com/api/v3/coins/${renamed.apiId}?x_cg_demo_api_key=${COINGECKO_API_KEY}`;
+                            const directUrl = `${PROXY_URL}?url=${encodeURIComponent(apiUrl)}`;
                             console.log('📡 직접 조회 URL:', directUrl);
 
                             const directResponse = await fetch(directUrl);
@@ -2093,7 +2100,9 @@
             }
 
             try {
-                const response = await fetch(`https://api.coingecko.com/api/v3/search?query=${ticker}&x_cg_demo_api_key=${COINGECKO_API_KEY}`);
+                const apiUrl = `https://api.coingecko.com/api/v3/search?query=${ticker}&x_cg_demo_api_key=${COINGECKO_API_KEY}`;
+                const proxyUrl = `${PROXY_URL}?url=${encodeURIComponent(apiUrl)}`;
+                const response = await fetch(proxyUrl);
 
                 // API 쿨타임 오류 (429)
                 if (response.status === 429) {
@@ -2143,7 +2152,9 @@
                     const coinDetails = await Promise.all(
                         matchingCoins.slice(0, 10).map(async (coin) => {
                             try {
-                                const detailResponse = await fetch(`https://api.coingecko.com/api/v3/coins/${coin.id}?x_cg_demo_api_key=${COINGECKO_API_KEY}`);
+                                const apiUrl = `https://api.coingecko.com/api/v3/coins/${coin.id}?x_cg_demo_api_key=${COINGECKO_API_KEY}`;
+                                const proxyUrl = `${PROXY_URL}?url=${encodeURIComponent(apiUrl)}`;
+                                const detailResponse = await fetch(proxyUrl);
                                 const detail = await detailResponse.json();
                                 return {
                                     id: coin.id,
@@ -2235,9 +2246,9 @@
 
         async function getHistoricalPriceFromCoinGecko(coinId, date) {
             try {
-                const response = await fetch(
-                    `https://api.coingecko.com/api/v3/coins/${coinId}/history?date=${date}&x_cg_demo_api_key=${COINGECKO_API_KEY}`
-                );
+                const apiUrl = `https://api.coingecko.com/api/v3/coins/${coinId}/history?date=${date}&x_cg_demo_api_key=${COINGECKO_API_KEY}`;
+                const proxyUrl = `${PROXY_URL}?url=${encodeURIComponent(apiUrl)}`;
+                const response = await fetch(proxyUrl);
                 const data = await response.json();
                 return data.market_data?.current_price?.usd || null;
             } catch (error) {
