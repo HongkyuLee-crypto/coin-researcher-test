@@ -882,7 +882,7 @@
                 </div>
 
                 <div id="exchangeInfo" class="info-section" style="display: none;">
-                    <div class="info-section-title">거래 가능</div>
+                    <div class="info-section-title">거래 가능 (거래량 많은 순)</div>
                     <div id="exchangeList"></div>
                 </div>
 
@@ -1055,6 +1055,9 @@
     </div>
 
     <script>
+        // CoinGecko Demo API 키
+        const COINGECKO_API_KEY = 'CG-QBQWihCEKKdJxUQZAJEK9bs2';
+
         // 전역 변수
         let selectedCoin = null;
         let usdtKrwRate = 0;
@@ -1285,7 +1288,11 @@
             const exchangeList = document.getElementById('exchangeList');
 
             if (!tickers || tickers.length === 0) {
-                exchangeList.innerHTML = '<div class="info-item">거래소 정보 없음 (DEX 확인 필요)</div>';
+                exchangeList.innerHTML = `
+                    <div class="info-item">한국: 없음</div>
+                    <div class="info-item">글로벌: 없음</div>
+                    <div class="info-item" style="color: #888; font-size: 12px; margin-top: 8px;">거래소 정보 없음 (DEX 확인 필요)</div>
+                `;
                 exchangeInfoSection.style.display = 'block';
                 return;
             }
@@ -1311,29 +1318,23 @@
 
             const exchangeArray = Object.entries(exchanges).map(([id, data]) => ({ id, ...data }));
 
-            if (exchangeArray.length === 0) {
-                exchangeList.innerHTML = '<div class="info-item">거래소 정보 없음 (DEX 확인 필요)</div>';
-                exchangeInfoSection.style.display = 'block';
-                return;
-            }
-
             // 한국 거래소와 글로벌 거래소 분리 및 정렬
             const koreanExs = exchangeArray.filter(e => e.isKorean).sort((a, b) => b.volume - a.volume);
             const globalExs = exchangeArray.filter(e => !e.isKorean).sort((a, b) => b.volume - a.volume);
 
-            let exchangeHTML = '';
+            // 항상 한국/글로벌 표시
+            const koreanNames = koreanExs.length > 0
+                ? koreanExs.slice(0, 3).map(e => e.name).join(', ')
+                : '없음';
 
-            // 한국 거래소 (최대 3개)
-            if (koreanExs.length > 0) {
-                const koreanNames = koreanExs.slice(0, 3).map(e => e.name).join(', ');
-                exchangeHTML += `<div class="info-item">🇰🇷 ${koreanNames}</div>`;
-            }
+            const globalNames = globalExs.length > 0
+                ? globalExs.slice(0, 5).map(e => e.name).join(', ')
+                : '없음';
 
-            // 글로벌 거래소 (최대 5개)
-            if (globalExs.length > 0) {
-                const globalNames = globalExs.slice(0, 5).map(e => e.name).join(', ');
-                exchangeHTML += `<div class="info-item">🌐 ${globalNames}</div>`;
-            }
+            const exchangeHTML = `
+                <div class="info-item">한국: ${koreanNames}</div>
+                <div class="info-item">글로벌: ${globalNames}</div>
+            `;
 
             exchangeList.innerHTML = exchangeHTML;
             exchangeInfoSection.style.display = 'block';
@@ -1631,7 +1632,7 @@
             }
 
             try {
-                const searchUrl = `https://api.coingecko.com/api/v3/search?query=${ticker}`;
+                const searchUrl = `https://api.coingecko.com/api/v3/search?query=${ticker}&x_cg_demo_api_key=${COINGECKO_API_KEY}`;
                 console.log('📡 API 호출:', ticker);
                 console.log('📡 API URL:', searchUrl);
 
@@ -1746,7 +1747,7 @@
                     const coinDetails = await Promise.all(
                         topCoins.map(async (coin) => {
                             try {
-                                const detailResponse = await fetch(`https://api.coingecko.com/api/v3/coins/${coin.id}`);
+                                const detailResponse = await fetch(`https://api.coingecko.com/api/v3/coins/${coin.id}?x_cg_demo_api_key=${COINGECKO_API_KEY}`);
 
                                 // 429 에러 체크
                                 if (detailResponse.status === 429) {
@@ -1860,7 +1861,7 @@
 
                         // 변경된 티커로 직접 조회
                         try {
-                            const directUrl = `https://api.coingecko.com/api/v3/coins/${renamed.apiId}`;
+                            const directUrl = `https://api.coingecko.com/api/v3/coins/${renamed.apiId}?x_cg_demo_api_key=${COINGECKO_API_KEY}`;
                             console.log('📡 직접 조회 URL:', directUrl);
 
                             const directResponse = await fetch(directUrl);
@@ -1959,6 +1960,23 @@
 
                 container.appendChild(option);
             });
+
+            const helpFooter = document.createElement('div');
+            helpFooter.style.cssText = `
+                padding: 12px;
+                border-top: 1px solid #e0e0e0;
+                background: #f9f9f9;
+                text-align: center;
+                font-size: 13px;
+                color: #666;
+                margin-top: 8px;
+            `;
+            helpFooter.innerHTML = `
+                찾는 코인이 없나요?
+                <a href="https://coinmarketcap.com/" target="_blank" style="color: #667eea; text-decoration: none; font-weight: 600; margin: 0 8px;">CoinMarketCap</a>
+                <a href="https://www.coingecko.com/" target="_blank" style="color: #667eea; text-decoration: none; font-weight: 600;">CoinGecko</a>
+            `;
+            container.appendChild(helpFooter);
 
             calculate();
         }
@@ -2075,7 +2093,7 @@
             }
 
             try {
-                const response = await fetch(`https://api.coingecko.com/api/v3/search?query=${ticker}`);
+                const response = await fetch(`https://api.coingecko.com/api/v3/search?query=${ticker}&x_cg_demo_api_key=${COINGECKO_API_KEY}`);
 
                 // API 쿨타임 오류 (429)
                 if (response.status === 429) {
@@ -2125,7 +2143,7 @@
                     const coinDetails = await Promise.all(
                         matchingCoins.slice(0, 10).map(async (coin) => {
                             try {
-                                const detailResponse = await fetch(`https://api.coingecko.com/api/v3/coins/${coin.id}`);
+                                const detailResponse = await fetch(`https://api.coingecko.com/api/v3/coins/${coin.id}?x_cg_demo_api_key=${COINGECKO_API_KEY}`);
                                 const detail = await detailResponse.json();
                                 return {
                                     id: coin.id,
@@ -2218,7 +2236,7 @@
         async function getHistoricalPriceFromCoinGecko(coinId, date) {
             try {
                 const response = await fetch(
-                    `https://api.coingecko.com/api/v3/coins/${coinId}/history?date=${date}`
+                    `https://api.coingecko.com/api/v3/coins/${coinId}/history?date=${date}&x_cg_demo_api_key=${COINGECKO_API_KEY}`
                 );
                 const data = await response.json();
                 return data.market_data?.current_price?.usd || null;
